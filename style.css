@@ -1,0 +1,86 @@
+body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slide-in-left { animation: slideInLeft 0.3s ease-out forwards; }
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+.nav-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ── PAGE LOADER ── */
+#page-loader {
+  position: fixed; inset: 0; background: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9999; transition: opacity 0.4s ease;
+}
+#page-loader.fade-out { opacity: 0; pointer-events: none; }
+.loader-bar {
+  width: 200px; height: 4px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-top: 1.2rem;
+}
+.loader-bar-fill {
+  height: 100%; background: #05cd74; border-radius: 99px;
+  animation: loadBar 1.2s ease forwards;
+}
+@keyframes loadBar { from { width: 0%; } to { width: 100%; } }
+
+/* ── DEV MODAL OVERLAY ── */
+#dev-auth-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+}
+.dev-modal {
+  background: #fff; border-radius: 24px; padding: 2rem; width: 340px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+}
+
+/* ── AUTH MODAL ── */
+#auth-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  z-index: 200; display: none; align-items: center; justify-content: center;
+}
+#auth-modal.open { display: flex; }
+.auth-box {
+  background: #fff; border-radius: 24px; padding: 2rem; width: 360px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.15); position: relative;
+}
+
+/* App icon preview */
+#icon-preview { display: none; width: 64px; height: 64px; border-radius: 16px; object-fit: cover; }
+#icon-preview.show { display: block; }
+
+/* Premium Dark Mode overrides for modals and loader */
+.dark .dev-modal, .dark .auth-box {
+  background: #1e1e1f !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #2e2e30 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+.dark .dev-modal h3, .dark .auth-box h3 {
+  color: #ffffff !important;
+}
+.dark .dev-modal p, .dark .auth-box p {
+  color: #94a3b8 !important;
+}
+.dark .dev-modal label, .dark .auth-box label {
+  color: #cbd5e1 !important;
+}
+.dark .dev-modal input, .dark .auth-box input {
+  background: #2e2e30 !important;
+  border-color: #3e3e42 !important;
+  color: #ffffff !important;
+}
+.dark .dev-modal button:first-child, .dark .auth-box button[onclick="closeAuthModal()"] {
+  background: #2e2e30 !important;
+  border-color: #3e3e42 !important;
+  color: #cbd5e1 !important;
+}
+.dark #page-loader {
+  background: #131314 !important;
+}
+.dark #page-loader p {
+  color: #cbd5e1 !important;
+}
+.dark #page-loader p:first-of-type {
+  color: #ffffff !important;
+}
