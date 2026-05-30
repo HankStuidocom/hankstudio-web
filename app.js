@@ -84,6 +84,7 @@ const CATEGORIES = [
 
 // ── STATE ──
 let activeTab = 'apps'; 
+let activeSubTab = 'for-you';
 let selectedApp = null;
 let isMobileMenuOpen = false;
 let isDeveloperAuthenticated = false;
@@ -288,12 +289,12 @@ function updateHeaderAuth() {
       : `<span class="text-xs font-bold text-white uppercase">${escapeHtml(displayName.charAt(0))}</span>`;
     
     area.innerHTML = `
-      <button onclick="setActiveTab('profile')" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border border-slate-250 dark:border-slate-800 shadow-sm hover:scale-105 transition-transform overflow-hidden" title="View Profile">
+      <button onclick="setActiveTab('profile')" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border border-slate-250 dark:border-slate-800 shadow-sm hover:scale-105 active:scale-[0.93] transition-all duration-200 overflow-hidden animate-fade-in" title="View Profile">
         ${avatarContent}
       </button>`;
   } else {
     area.innerHTML = `
-      <button onclick="openAuthModal('login')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-205 dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 transition-transform" title="Sign In">
+      <button onclick="openAuthModal('login')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-205 dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 active:scale-[0.93] transition-all duration-200 animate-fade-in" title="Sign In">
         <i data-lucide="user" class="w-4 h-4"></i>
       </button>`;
   }
@@ -346,11 +347,30 @@ window.setActiveTab = function(tabId) {
     return;
   }
   activeTab = tabId;
+  activeSubTab = 'for-you'; // Reset sub-tab selection on main tab shifts
   renderNavs();
   renderContent();
   renderBottomNav();
   const viewport = document.getElementById('main-content-viewport');
-  if (viewport) viewport.scrollTo({ top: 0, behavior: 'smooth' });
+  if (viewport) viewport.scrollTo({ top: 0, behavior: 'instant' }); // Snap instantly for smoother responsive app feel
+};
+
+window.setActiveSubTab = function(subTabId) {
+  activeSubTab = subTabId;
+  renderContent();
+  const viewport = document.getElementById('main-content-viewport');
+  if (viewport) viewport.scrollTo({ top: 0, behavior: 'instant' });
+};
+
+window.searchCategory = function(catId) {
+  setActiveTab('search');
+  setTimeout(() => {
+    const input = document.getElementById('global-search-input');
+    if (input) {
+      input.value = catId;
+      handleSearchOnPage(catId);
+    }
+  }, 100);
 };
 
 function renderNavs() {
@@ -385,7 +405,7 @@ function renderNavs() {
 }
 
 function renderBottomNav() {
-  const navContainer = document.querySelector('nav.absolute.bottom-0');
+  const navContainer = document.getElementById('bottom-nav-bar');
   if (!navContainer) return;
 
   const items = [
@@ -443,14 +463,37 @@ function emptyState(icon, title, msg, btnLabel, btnTab) {
 
 // ── PROFILE PAGE ──
 function renderProfileHTML() {
+  const isDarkModeActive = document.documentElement.classList.contains('dark');
+  
+  // Dynamic settings card for dark mode toggle button
+  const toggleCardHtml = `
+    <div class="bg-white dark:bg-[#1e1e1f] border border-slate-250 dark:border-slate-800 rounded-[1.5rem] p-5 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
+          <i data-lucide="${isDarkModeActive ? 'sun' : 'moon'}" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold text-slate-900 dark:text-white">Dark Theme Mode</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400">Toggle dark or light color styles</p>
+        </div>
+      </div>
+      <button onclick="toggleDarkModeAndReRender()" class="px-4 py-2 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-200 text-xs font-extrabold rounded-full transition-all border border-slate-250 dark:border-slate-700 shadow-xs cursor-pointer">
+        ${isDarkModeActive ? 'Switch to Light' : 'Switch to Dark'}
+      </button>
+    </div>
+  `;
+
   if (!currentUser) {
-    return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-8">
+    return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-6">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">My Profile</h1>
-      <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
-        <i data-lucide="user-x" class="w-14 h-14 text-slate-300 dark:text-slate-750 mx-auto mb-4"></i>
+      <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center shadow-sm">
+        <i data-lucide="user-x" class="w-14 h-14 text-slate-350 dark:text-slate-700 mx-auto mb-4 animate-pulse"></i>
         <h3 class="text-base font-bold text-slate-800 dark:text-white">Not Logged In</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">You must log in to view your profile.</p>
-        <button onclick="openAuthModal('login')" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">Log In</button>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">You must log in to view your profile and manage uploaded applications.</p>
+        <button onclick="openAuthModal('login')" class="mt-6 bg-brand hover:bg-brand-hover text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md">Log In</button>
+      </div>
+      <div class="pt-4">
+        ${toggleCardHtml}
       </div>
     </div>`;
   }
@@ -467,27 +510,8 @@ function renderProfileHTML() {
     </div>
   `).join('')}</div>` : `<p class="text-sm text-slate-400 dark:text-slate-500">You haven't uploaded any apps yet.</p>`;
 
-  const isDarkModeActive = document.documentElement.classList.contains('dark');
   const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'User');
   const initialLetter = displayName.charAt(0).toUpperCase();
-
-  // Dynamic settings card for dark mode toggle button
-  const toggleCardHtml = `
-    <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-5 mt-6 flex items-center justify-between shadow-sm">
-      <div class="flex items-center gap-3">
-        <div class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
-          <i data-lucide="${isDarkModeActive ? 'sun' : 'moon'}" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <p class="text-xs font-bold text-slate-900 dark:text-white">Dark Theme Mode</p>
-          <p class="text-[10px] text-slate-500 dark:text-slate-400">Toggle dark or light color styles</p>
-        </div>
-      </div>
-      <button onclick="toggleDarkModeAndReRender()" class="px-4 py-2 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-200 text-xs font-extrabold rounded-full transition-all border border-slate-250 dark:border-slate-700 shadow-xs cursor-pointer">
-        ${isDarkModeActive ? 'Switch to Light' : 'Switch to Dark'}
-      </button>
-    </div>
-  `;
 
   return `<div class="p-6 lg:p-10 max-w-5xl mx-auto space-y-6">
     <!-- Profile Header -->
@@ -513,7 +537,9 @@ function renderProfileHTML() {
     </div>
 
     <!-- Toggle Settings Card -->
-    ${toggleCardHtml}
+    <div class="mt-4">
+      ${toggleCardHtml}
+    </div>
 
     <!-- My Apps -->
     <div class="pt-4">
@@ -710,12 +736,104 @@ function renderDeveloperHTML() {
 
 // ── HOME (GAMES) FEED PAGE ──
 function renderHomeHTML() {
-  const topTabs = ['For you', 'Top charts', 'Premium', 'Categories'];
-  const topTabsHTML = topTabs.map((tab, i) => `
-    <div class="px-4 py-3 whitespace-nowrap cursor-pointer text-[13px] font-medium ${i===0 ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}">
-      ${tab}
-    </div>
-  `).join('');
+  const topTabs = [
+    { id: 'for-you', label: 'For you' },
+    { id: 'top-charts', label: 'Top charts' },
+    { id: 'premium', label: 'Premium' },
+    { id: 'categories', label: 'Categories' }
+  ];
+  const topTabsHTML = topTabs.map((tab) => {
+    const active = activeSubTab === tab.id;
+    return `
+      <div onclick="setActiveSubTab('${tab.id}')" class="px-4 py-3 whitespace-nowrap cursor-pointer text-[13px] font-medium transition-all duration-300 ${active ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}">
+        ${tab.label}
+      </div>
+    `;
+  }).join('');
+
+  if (activeSubTab === 'top-charts') {
+    const games = APPS_DATA.filter(a => a.category === 'Games');
+    const html = games.length ? games.map((app, i) => `
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+        <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
+        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
+          <p class="text-xs text-slate-400">${escapeHtml(app.category)}</p>
+        </div>
+        <button class="bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-4 py-2 rounded-xl text-xs font-bold transition-colors">View</button>
+      </div>`).join('') :
+      emptyState('bar-chart-2','No games yet','Games will appear here once uploaded.');
+    return `
+      <div class="max-w-2xl mx-auto pb-6">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+          ${topTabsHTML}
+        </div>
+        <div class="p-4 space-y-4">
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Top Games</h2>
+          <div class="flex flex-col gap-4">${html}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeSubTab === 'premium') {
+    const games = APPS_DATA.filter(a => a.category === 'Games');
+    const html = games.length ? games.map(app => `
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
+          <p class="text-xs text-slate-400">${escapeHtml(app.category)} • Premium</p>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span class="text-[10px] text-amber-500 font-bold flex items-center gap-0.5">🏆 Editor's Choice</span>
+          </div>
+        </div>
+        <span class="text-[11px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full">$0.99</span>
+      </div>`).join('') :
+      emptyState('award','No premium games yet','Premium selections will appear here.');
+    return `
+      <div class="max-w-2xl mx-auto pb-6">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+          ${topTabsHTML}
+        </div>
+        <div class="p-4 space-y-4">
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Premium Curated Games</h2>
+          <div class="flex flex-col gap-4">${html}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (activeSubTab === 'categories') {
+    const html = CATEGORIES.map(cat => {
+      const count = APPS_DATA.filter(a => a.category === cat.id).length;
+      return `
+        <div onclick="searchCategory('${cat.id}')" class="bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 rounded-3xl p-5 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between h-[120px] group">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center ${cat.classes ? cat.classes : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'}">
+              <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
+            </div>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate">${cat.label}</h3>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">${count} ${count === 1 ? 'App' : 'Apps'}</p>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="max-w-2xl mx-auto pb-6">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+          ${topTabsHTML}
+        </div>
+        <div class="p-4 space-y-4">
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Explore Categories</h2>
+          <div class="grid grid-cols-2 gap-4">${html}</div>
+        </div>
+      </div>
+    `;
+  }
 
   const featuredApp = APPS_DATA.find(a => a.category === 'Games') || APPS_DATA[0];
   let bannerHTML = '';
@@ -1114,6 +1232,8 @@ window.openAppModal = async function(appId) {
 
   const appModal = document.getElementById('app-detail-modal');
   if (appModal) appModal.classList.remove('hidden');
+  const viewport = document.getElementById('main-content-viewport');
+  if (viewport) viewport.style.overflowY = 'hidden';
   document.body.style.overflow = 'hidden';
   loadAIGuide(app);
 };
@@ -1121,6 +1241,8 @@ window.openAppModal = async function(appId) {
 window.closeAppModal = function() {
   const appModal = document.getElementById('app-detail-modal');
   if (appModal) appModal.classList.add('hidden');
+  const viewport = document.getElementById('main-content-viewport');
+  if (viewport) viewport.style.overflowY = 'auto';
   document.body.style.overflow = '';
   selectedApp = null;
 };
