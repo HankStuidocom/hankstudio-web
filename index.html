@@ -63,7 +63,7 @@
 </div>
 
 <!-- ══════════════════════════════════════
-     DEVELOPER PASSWORD MODAL
+     DEVELOPER ACCESS MODAL
 ══════════════════════════════════════ -->
 <div id="dev-auth-overlay" style="display:none;">
   <div class="dev-modal">
@@ -73,14 +73,12 @@
       </div>
       <div>
         <h3 style="font-size:1rem;font-weight:800;color:#0f172a;">Developer Access</h3>
-        <p style="font-size:0.72rem;color:#94a3b8;">Enter your developer password</p>
+        <p style="font-size:0.72rem;color:#94a3b8;">Sign in to publish and manage your apps</p>
       </div>
     </div>
-    <input id="dev-password-input" type="password" placeholder="Password..." 
-      style="width:100%;border:1.5px solid #e2e8f0;border-radius:12px;padding:0.65rem 1rem;font-size:0.85rem;outline:none;margin-bottom:0.5rem;box-sizing:border-box;"
-      onkeydown="if(event.key==='Enter') checkDevPassword()"
-    />
-    <p id="dev-pw-error" style="color:#ef4444;font-size:0.75rem;margin-bottom:0.6rem;display:none;">❌ Incorrect password. Try again.</p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:0.9rem 1rem;margin-bottom:0.9rem;">
+      <p style="font-size:0.78rem;line-height:1.45;color:#334155;margin:0;">Developer tools are tied to your logged-in account. Use the sign-in flow to continue, then come back here to manage uploads.</p>
+    </div>
     <div style="display:flex;gap:0.6rem;margin-top:0.3rem;">
       <button onclick="closeDeveloperModal()" 
         style="flex:1;padding:0.65rem;border-radius:12px;border:1.5px solid #e2e8f0;background:white;font-weight:700;font-size:0.82rem;cursor:pointer;">
@@ -88,7 +86,7 @@
       </button>
       <button onclick="checkDevPassword()"
         style="flex:1;padding:0.65rem;border-radius:12px;border:none;background:#05cd74;color:white;font-weight:800;font-size:0.82rem;cursor:pointer;">
-        Enter
+        Sign In
       </button>
     </div>
   </div>
@@ -201,7 +199,7 @@
 
         <!-- Notification Bell -->
         <div class="relative p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200">
-          <i data-lucide="bell" class="w-4.5 h-4.5"></i>
+          <i data-lucide="bell" class="w-4 h-4"></i>
           <span class="absolute top-1 right-1 w-3 h-3 bg-red-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center border border-white dark:border-[#121212]">3</span>
         </div>
 
@@ -240,7 +238,7 @@
       <div class="flex-1 overflow-y-auto px-5 pb-8 space-y-6 scroll-smooth hide-scrollbar" id="modal-content-scroll">
         
         <!-- Main Icon & Title Information Row -->
-        <div class="flex gap-4.5 pt-2 items-start">
+        <div class="flex gap-4 pt-2 items-start">
           <div id="modal-app-icon" class="w-20 h-20 rounded-[1.25rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-800"></div>
           <div class="flex-1 min-w-0">
             <h3 id="modal-app-title" class="text-base sm:text-lg font-bold text-slate-950 dark:text-white tracking-tight leading-snug truncate">App Title</h3>
@@ -258,21 +256,21 @@
         </div>
 
         <!-- Google Play Store Stats Grid Section -->
-        <div class="flex justify-around items-center py-2.5 border-y border-slate-100 dark:border-slate-850/60 px-2 text-center">
+        <div class="flex justify-around items-center py-2.5 border-y border-slate-100 dark:border-slate-800/60 px-2 text-center">
           <!-- Stat 1: Ratings -->
-          <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-850/60">
+          <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-800/60">
             <span class="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-0.5">
               <span id="modal-app-rating">3.7</span> <i data-lucide="star" class="w-3 h-3 fill-slate-900 dark:fill-white text-slate-900 dark:text-white"></i>
             </span>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center" id="modal-stat-rating-count">
-              7 reviews <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-550"></i>
+            <span class="text-[9px] text-slate-500 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center" id="modal-stat-rating-count">
+              7 reviews <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-500"></i>
             </span>
           </div>
           <!-- Stat 2: Content Rating -->
-          <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-850/60">
-            <span class="text-[9px] font-extrabold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-750 px-1 py-0.2 rounded font-mono">3+</span>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center">
-              Rated for 3+ <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-550"></i>
+          <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-800/60">
+            <span class="text-[9px] font-extrabold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 px-1 py-0.5 rounded font-mono">3+</span>
+            <span class="text-[9px] text-slate-500 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center">
+              Rated for 3+ <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-500"></i>
             </span>
           </div>
           <!-- Stat 3: Size -->
@@ -280,7 +278,7 @@
             <div class="text-xs font-extrabold text-slate-900 dark:text-white flex items-center justify-center">
               <i data-lucide="download" class="w-3.5 h-3.5 text-slate-900 dark:text-white"></i>
             </div>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1" id="modal-stat-size">16 MB</span>
+            <span class="text-[9px] text-slate-500 dark:text-slate-500 mt-1" id="modal-stat-size">16 MB</span>
           </div>
         </div>
 
@@ -310,23 +308,23 @@
             <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
           </div>
           <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Safety starts with understanding how developers collect and share your data. Data privacy and security practices may vary based on your use, region, and age.</p>
-          <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4.5 space-y-4 bg-slate-50/50 dark:bg-slate-900/30">
+          <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/30">
             <div class="flex items-start gap-4">
-              <i data-lucide="share-2" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
+              <i data-lucide="share-2" class="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
               <div>
                 <p class="text-xs font-bold text-slate-800 dark:text-white">No data shared with third parties</p>
                 <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5"><span class="underline cursor-pointer">Learn more</span> about how developers declare sharing</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
-              <i data-lucide="cloud-off" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
+              <i data-lucide="cloud-off" class="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
               <div>
                 <p class="text-xs font-bold text-slate-800 dark:text-white">No data collected</p>
                 <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5"><span class="underline cursor-pointer">Learn more</span> about how developers declare collection</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
-              <i data-lucide="minus-circle" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
+              <i data-lucide="minus-circle" class="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
               <div>
                 <p class="text-xs font-bold text-slate-800 dark:text-white">App doesn't provide a way to request data deletion</p>
               </div>
@@ -338,12 +336,12 @@
 
 
         <!-- Ratings & Reviews Section -->
-        <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4.5 space-y-4">
+        <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4 space-y-4">
           <div class="flex justify-between items-center cursor-pointer hover:opacity-80 transition-opacity">
             <h4 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white uppercase tracking-wider">Ratings and reviews</h4>
             <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
           </div>
-          <p class="text-[10px] text-slate-450 dark:text-slate-500 -mt-2 leading-snug">Ratings and reviews are verified and are from people who use the same type of device that you use.</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-500 -mt-2 leading-snug">Ratings and reviews are verified and are from people who use the same type of device that you use.</p>
 
           <div class="flex gap-6 items-center">
             <div class="flex flex-col items-center">
@@ -396,7 +394,7 @@
           <div id="modal-reviews-list" class="space-y-4 pr-1"></div>
           
           <!-- Leave a Review Form (Google Play Style) -->
-          <div id="review-form-container" class="bg-slate-50 dark:bg-[#1E1E1E] p-4.5 rounded-2xl border border-slate-200 dark:border-slate-800 mt-4">
+          <div id="review-form-container" class="bg-slate-50 dark:bg-[#1E1E1E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mt-4">
             <p class="text-xs font-bold text-slate-800 dark:text-white mb-2">Rate this app</p>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 -mt-1.5 mb-3">Tell others what you think</p>
             <div class="flex gap-1.5 mb-4" id="review-star-selector">
@@ -407,10 +405,10 @@
               <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(5)"></i>
             </div>
             <div id="review-name-field" class="mb-2.5">
-              <input id="review-username" type="text" placeholder="Your name (optional for guests)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 shadow-xs"/>
+              <input id="review-username" type="text" placeholder="Your name (optional for guests)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 shadow-sm"/>
             </div>
-            <textarea id="review-text" rows="2" placeholder="Describe your experience (optional)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 mb-2.5 resize-none shadow-xs"></textarea>
-            <button onclick="submitReview()" class="w-full bg-emerald-600 dark:bg-[#B8CCF6] hover:bg-emerald-700 dark:hover:bg-[#a5bceb] text-white dark:text-[#243B63] font-bold py-2 rounded-xl text-xs transition-all duration-200 active:scale-95 shadow-sm">Submit Review</button>
+            <textarea id="review-text" rows="2" placeholder="Describe your experience (optional)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 mb-2.5 resize-none shadow-sm"></textarea>
+            <button onclick="submitReview(this)" class="w-full bg-emerald-600 dark:bg-[#B8CCF6] hover:bg-emerald-700 dark:hover:bg-[#a5bceb] text-white dark:text-[#243B63] font-bold py-2 rounded-xl text-xs transition-all duration-200 active:scale-95 shadow-sm">Submit Review</button>
             <p id="review-auth-msg" class="text-[10px] text-red-500 mt-2 hidden">Log in to leave a review.</p>
           </div>
 

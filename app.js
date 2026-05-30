@@ -110,6 +110,7 @@ let activeSubTab = 'for-you';
 let selectedApp = null;
 let isMobileMenuOpen = false;
 let isDeveloperAuthenticated = false;
+let pendingDeveloperAccess = false;
 let currentGuideText = '';
 let geminiApiKey = safeStorage.getItem('gemini_api_key') || '';
 let uploadIconData = null;
@@ -230,6 +231,7 @@ function initializePlatform() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = LOGO_SVG;
   });
+  isDeveloperAuthenticated = !!currentUser;
   renderNavs();
   renderContent();
   renderBottomNav();
@@ -252,7 +254,13 @@ function initializePlatform() {
         currentUser = null;
       }
       safeStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
+      isDeveloperAuthenticated = !!currentUser;
       updateHeaderAuth();
+      if (currentUser && pendingDeveloperAccess) {
+        pendingDeveloperAccess = false;
+        closeDeveloperModal();
+        setActiveTab('developer');
+      }
       if (activeTab === 'profile') renderContent(); 
     });
   }
@@ -393,6 +401,8 @@ window.logOut = async function() {
   try {
     await auth.signOut();
     currentUser = null;
+    isDeveloperAuthenticated = false;
+    pendingDeveloperAccess = false;
     safeStorage.setItem('hankstudio_current_user', 'null');
     updateHeaderAuth();
     setActiveTab('apps');
@@ -404,8 +414,9 @@ function updateHeaderAuth() {
   if (!area) return;
   if (currentUser) {
     const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'User');
-    const avatarContent = currentUser.photoURL 
-      ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover rounded-full">`
+    const avatarUrl = safeImageUrl(currentUser.photoURL);
+    const avatarContent = avatarUrl
+      ? `<img src="${escapeHtml(avatarUrl)}" class="w-full h-full object-cover rounded-full">`
       : `<span class="text-xs font-bold text-white uppercase">${escapeHtml(displayName.charAt(0))}</span>`;
     
     area.innerHTML = `
@@ -430,28 +441,19 @@ window.openDeveloperModal = function() {
   const overlay = document.getElementById('dev-auth-overlay');
   if (overlay) {
     overlay.style.display = 'flex';
-    document.getElementById('dev-password-input').value = '';
-    document.getElementById('dev-pw-error').style.display = 'none';
-    setTimeout(() => document.getElementById('dev-password-input').focus(), 100);
   }
 };
 
-window.closeDeveloperModal = function() {
+window.closeDeveloperModal = function(preserveAccess = false) {
   const overlay = document.getElementById('dev-auth-overlay');
   if (overlay) overlay.style.display = 'none';
+  if (!preserveAccess) pendingDeveloperAccess = false;
 };
 
 window.checkDevPassword = function() {
-  const pw = document.getElementById('dev-password-input').value;
-  if (pw === 'Hank@9564') {
-    isDeveloperAuthenticated = true;
-    closeDeveloperModal();
-    setActiveTab('developer');
-  } else {
-    document.getElementById('dev-pw-error').style.display = 'block';
-    document.getElementById('dev-password-input').value = '';
-    document.getElementById('dev-password-input').focus();
-  }
+  pendingDeveloperAccess = true;
+  closeDeveloperModal(true);
+  openAuthModal('login');
 };
 
 // ── NAVIGATION & TAB STATE ──
@@ -463,6 +465,7 @@ window.toggleMobileMenu = function(open) {
 
 window.setActiveTab = function(tabId) {
   if (tabId === 'developer' && !isDeveloperAuthenticated) {
+    pendingDeveloperAccess = true;
     openDeveloperModal();
     return;
   }
@@ -472,14 +475,14 @@ window.setActiveTab = function(tabId) {
   renderContent();
   renderBottomNav();
   const viewport = document.getElementById('main-content-viewport');
-  if (viewport) viewport.scrollTo({ top: 0, behavior: 'instant' }); // Snap instantly for smoother responsive app feel
+  if (viewport) viewport.scrollTo({ top: 0, behavior: 'auto' });
 };
 
 window.setActiveSubTab = function(subTabId) {
   activeSubTab = subTabId;
   renderContent();
   const viewport = document.getElementById('main-content-viewport');
-  if (viewport) viewport.scrollTo({ top: 0, behavior: 'instant' });
+  if (viewport) viewport.scrollTo({ top: 0, behavior: 'auto' });
 };
 
 window.searchCategory = function(catId) {
@@ -499,7 +502,7 @@ function renderNavs() {
     if (!el) return;
     el.innerHTML = NAV_ITEMS.map(item => {
       const active = activeTab === item.id;
-      return `<button onclick="setActiveTab('${item.id}'); toggleMobileMenu(false)"
+      return `<button onclick="setActiveTab('${item.id}')"
         class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left w-full nav-transition ${active ? 'bg-brand-bg text-brand font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}">
         <i data-lucide="${item.icon}" class="w-5 h-5 ${active ? 'text-brand' : 'text-slate-400'}"></i>
         <span class="text-sm font-semibold">${item.label}</span>
@@ -511,7 +514,7 @@ function renderNavs() {
     const el = document.getElementById(id);
     if (!el) return;
     const active = activeTab === 'developer';
-    el.innerHTML = `<button onclick="openDeveloperModal(); toggleMobileMenu(false)"
+    el.innerHTML = `<button onclick="openDeveloperModal()"
       class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-left w-full nav-transition ${active ? 'bg-brand-bg text-brand font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}">
       <i data-lucide="code-2" class="w-5 h-5 ${active ? 'text-brand' : 'text-slate-400'}"></i>
       <span class="text-sm font-semibold">Developer</span>
@@ -565,16 +568,19 @@ function renderContent() {
 
 // ── APP CARD HTML ──
 function appCardHTML(app, compact = false) {
-  const iconHTML = app.iconDataUrl
-    ? `<img src="${app.iconDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:${compact?'12px':'16px'};">`
-    : `<div style="width:100%;height:100%;background:${app.iconBg||'#05cd74'};display:flex;align-items:center;justify-content:center;font-size:${compact?'1.4rem':'1.8rem'};border-radius:${compact?'12px':'16px'};">${app.emoji||'📦'}</div>`;
+  const iconSrc = safeImageUrl(app.iconDataUrl, { allowData: true });
+  const iconBg = safeCssColor(app.iconBg, '#05cd74');
+  const iconEmoji = escapeHtml(app.emoji || '📦');
+  const iconHTML = iconSrc
+    ? `<img src="${escapeHtml(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:${compact?'12px':'16px'};">`
+    : `<div style="width:100%;height:100%;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:${compact?'1.4rem':'1.8rem'};border-radius:${compact?'12px':'16px'};">${iconEmoji}</div>`;
   return iconHTML;
 }
 
 // ── EMPTY STATE ──
 function emptyState(icon, title, msg, btnLabel, btnTab) {
   return `<div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
-    <i data-lucide="${icon}" class="w-14 h-14 text-slate-300 dark:text-slate-650 mx-auto mb-4"></i>
+    <i data-lucide="${icon}" class="w-14 h-14 text-slate-300 dark:text-slate-500 mx-auto mb-4"></i>
     <h3 class="text-base font-bold text-slate-800 dark:text-white">${title}</h3>
     <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">${msg}</p>
     ${btnLabel ? `<button onclick="openDeveloperModal()" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">${btnLabel}</button>` : ''}
@@ -594,10 +600,10 @@ function renderProfileHTML() {
         </div>
         <div>
           <p class="text-xs font-bold text-slate-900 dark:text-white">Dark Theme Mode</p>
-          <p class="text-[10px] text-slate-505 dark:text-slate-400">Toggle dark or light color styles</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400">Toggle dark or light color styles</p>
         </div>
       </div>
-      <button onclick="toggleDarkModeAndReRender()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-extrabold rounded-full transition-all border border-slate-200 dark:border-slate-700 shadow-xs cursor-pointer">
+      <button onclick="toggleDarkModeAndReRender()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-extrabold rounded-full transition-all border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer">
         ${isDarkModeActive ? 'Switch to Light' : 'Switch to Dark'}
       </button>
     </div>
@@ -607,7 +613,7 @@ function renderProfileHTML() {
     return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-6">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">My Profile</h1>
       <div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center shadow-sm">
-        <i data-lucide="user-x" class="w-14 h-14 text-slate-355 dark:text-slate-700 mx-auto mb-4 animate-pulse"></i>
+        <i data-lucide="user-x" class="w-14 h-14 text-slate-400 dark:text-slate-700 mx-auto mb-4 animate-pulse"></i>
         <h3 class="text-base font-bold text-slate-800 dark:text-white">Not Logged In</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">You must log in to view your profile and manage uploaded applications.</p>
         <button onclick="openAuthModal('login')" class="mt-6 bg-brand hover:bg-brand-hover text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md">Log In</button>
@@ -632,13 +638,14 @@ function renderProfileHTML() {
 
   const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'User');
   const initialLetter = displayName.charAt(0).toUpperCase();
+  const profilePhotoUrl = safeImageUrl(currentUser.photoURL);
 
   return `<div class="p-6 lg:p-10 max-w-5xl mx-auto space-y-6">
     <!-- Profile Header -->
     <div class="flex items-center gap-6 p-6 bg-slate-50 dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem]">
       <div class="w-24 h-24 bg-brand text-white text-4xl font-extrabold flex items-center justify-center rounded-full shadow-lg overflow-hidden border border-brand/20">
-        ${currentUser.photoURL 
-          ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover">`
+        ${profilePhotoUrl
+          ? `<img src="${escapeHtml(profilePhotoUrl)}" class="w-full h-full object-cover">`
           : initialLetter}
       </div>
       <div>
@@ -677,9 +684,9 @@ function renderDeveloperHTML() {
     return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-8">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Developer Portal</h1>
       <div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
-        <i data-lucide="lock" class="w-14 h-14 text-slate-355 dark:text-slate-700 mx-auto mb-4"></i>
+        <i data-lucide="lock" class="w-14 h-14 text-slate-400 dark:text-slate-700 mx-auto mb-4"></i>
         <h3 class="text-base font-bold text-slate-800 dark:text-white">Developer Access Required</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">Authenticate using your developer credentials to access this portal.</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">Sign in with your account to access this portal and manage uploads.</p>
         <button onclick="openDeveloperModal()" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">Unlock Portal</button>
       </div>
     </div>`;
@@ -691,7 +698,7 @@ function renderDeveloperHTML() {
   const appsHtml = myApps.length ? `
     <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
       ${myApps.map(app => `
-        <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xs hover:border-slate-300 dark:hover:border-slate-750 transition-all">
+        <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all">
           <div class="flex items-center gap-3.5 min-w-0">
             <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
               ${appCardHTML(app, true)}
@@ -701,14 +708,14 @@ function renderDeveloperHTML() {
               <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(app.category)}</p>
             </div>
           </div>
-          <button onclick="deleteApp('${app.id}')" class="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-xl transition-colors border border-red-100/50 dark:border-red-550/20" title="Delete App">
+          <button onclick="deleteApp('${app.id}')" class="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-xl transition-colors border border-red-100/50 dark:border-red-500/20" title="Delete App">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
       `).join('')}
     </div>` : `
     <div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-      <i data-lucide="layout-grid" class="w-10 h-10 text-slate-355 dark:text-slate-700 mx-auto mb-2"></i>
+      <i data-lucide="layout-grid" class="w-10 h-10 text-slate-400 dark:text-slate-700 mx-auto mb-2"></i>
       <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No Apps Published</p>
       <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 max-w-[180px] mx-auto">Upload your first app using the form on the left.</p>
     </div>`;
@@ -731,10 +738,10 @@ function renderDeveloperHTML() {
         <!-- UPLOAD FORM (Left side) -->
         <div class="lg:col-span-7 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-5">
           <h2 class="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
-            <i data-lucide="upload-cloud" class="w-4.5 h-4.5 text-brand"></i> Upload New Application
+            <i data-lucide="upload-cloud" class="w-4 h-4 text-brand"></i> Upload New Application
           </h2>
 
-          <div id="upload-error" class="hidden bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-550/20 text-red-600 dark:text-red-400 p-3.5 rounded-2xl text-xs font-medium leading-relaxed"></div>
+          <div id="upload-error" class="hidden bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 p-3.5 rounded-2xl text-xs font-medium leading-relaxed"></div>
           <div id="upload-success" class="hidden bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-500/25 text-brand p-3.5 rounded-2xl text-xs font-medium leading-relaxed"></div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -787,8 +794,8 @@ function renderDeveloperHTML() {
             </div>
             <div class="flex-1 w-full space-y-1 text-center sm:text-left">
               <p class="text-xs font-bold text-slate-900 dark:text-white">App Icon Image *</p>
-              <p class="text-[10px] text-slate-550 dark:text-slate-400 mb-2">Select a premium, high-res PNG/JPG icon.</p>
-              <label class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-750 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white px-3.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all shadow-xs">
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Select a premium, high-res PNG/JPG icon.</p>
+              <label class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white px-3.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all shadow-sm">
                 <i data-lucide="file-image" class="w-3.5 h-3.5"></i> Browse Icon...
                 <input id="upload-icon" type="file" accept="image/*" class="hidden" onchange="handleIconSelect(this); document.getElementById('icon-placeholder-icon').classList.add('hidden')"/>
               </label>
@@ -826,7 +833,7 @@ function renderDeveloperHTML() {
               </div>
               <div>
                 <p class="text-xs font-bold text-slate-900 dark:text-white">Verified Creator</p>
-                <p class="text-[10px] text-slate-550 dark:text-slate-400">HankStudio Registered Developer</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400">HankStudio Registered Developer</p>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3 pt-2">
@@ -844,16 +851,12 @@ function renderDeveloperHTML() {
           <!-- Apps Management Card -->
           <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
-              <i data-lucide="folder-git" class="w-4.5 h-4.5 text-brand"></i> Manage Applications
+              <i data-lucide="folder-git" class="w-4 h-4 text-brand"></i> Manage Applications
             </h2>
             ${appsHtml}
           </div>
         </div>
-      </div>-4.5 h-4.5 text-brand"></i> Manage Applications
-            </h2>
-            ${appsHtml}
-          </div>
-        </div>
+      </div>
       </div>
     </div>
   `;
@@ -964,13 +967,14 @@ function renderHomeHTML() {
   let bannerHTML = '';
   if (featuredApp) {
     const isAttendEase = featuredApp.title === 'AttendEase';
+    const bannerSrc = safeImageUrl(featuredApp.bannerDataUrl || featuredApp.iconDataUrl, { allowData: true });
     bannerHTML = `
       <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-sm w-full group transition-all duration-300 hover:shadow-md">
         <!-- Card Banner Cover Image -->
         <div class="relative w-full h-[160px] sm:h-[200px] overflow-hidden cursor-pointer" onclick="openAppModal('${featuredApp.id}')">
           <span class="absolute top-3 left-3 bg-white/90 dark:bg-black/80 text-slate-900 dark:text-white text-[9px] font-bold px-2.5 py-1 rounded-md z-10 shadow-sm">Coming soon</span>
-          ${(featuredApp.bannerDataUrl || featuredApp.iconDataUrl) 
-            ? `<img src="${featuredApp.bannerDataUrl || featuredApp.iconDataUrl}" class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700">`
+          ${bannerSrc
+            ? `<img src="${escapeHtml(bannerSrc)}" class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700">`
             : `<div class="w-full h-full bg-slate-800 flex items-center justify-center"><i data-lucide="image" class="w-10 h-10 text-slate-400"></i></div>`
           }
         </div>
@@ -982,10 +986,10 @@ function renderHomeHTML() {
             </div>
             <div class="min-w-0">
               <h3 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white truncate">${escapeHtml(featuredApp.title)}</h3>
-              <p class="text-[10px] sm:text-xs text-slate-550 dark:text-slate-400 truncate mt-0.5">${escapeHtml(featuredApp.authorName)}</p>
+              <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(featuredApp.authorName)}</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <span class="text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">12+</span>
-                <span class="text-[9px] text-slate-450 dark:text-slate-500">Rated for 12+</span>
+                <span class="text-[9px] text-slate-500 dark:text-slate-500">Rated for 12+</span>
               </div>
             </div>
           </div>
@@ -993,7 +997,7 @@ function renderHomeHTML() {
             <button onclick="openAppModal('${featuredApp.id}')" class="bg-[#c2e7ff] dark:bg-[#B8CCF6] hover:bg-[#b2e0ff] dark:hover:bg-[#a5bceb] text-[#001d35] dark:text-[#243B63] px-6 py-2.5 rounded-full font-extrabold text-[12px] shadow-sm transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 duration-200">
               Install
             </button>
-            <span class="text-[8px] text-slate-450 dark:text-slate-500 mt-1 block">In-app purchases</span>
+            <span class="text-[8px] text-slate-500 dark:text-slate-500 mt-1 block">In-app purchases</span>
           </div>
         </div>
       </div>
@@ -1171,7 +1175,7 @@ function renderSearchHTML() {
 
       <!-- Trending Searches -->
       <div id="search-suggestions-container" class="space-y-4">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-550 dark:text-slate-400 mb-3">Trending Searches</h2>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Trending Searches</h2>
         <div class="space-y-3">
           <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('Attendease')">
             <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i>
@@ -1236,7 +1240,7 @@ window.handleSearchOnPage = function(query) {
     } else {
       resultsArea.innerHTML = `
         <div class="py-16 text-center text-slate-400">
-          <i data-lucide="search-x" class="w-12 h-12 mx-auto mb-3 text-slate-355"></i>
+          <i data-lucide="search-x" class="w-12 h-12 mx-auto mb-3 text-slate-400"></i>
           <h3 class="font-bold text-slate-500 dark:text-slate-400 text-xs">No results for "${escapeHtml(query)}"</h3>
         </div>`;
     }
@@ -1261,6 +1265,15 @@ window.handleIconSelect = function(input) {
 };
 
 window.handleAppUpload = async function() {
+  if (!currentUser) {
+    alert('Please sign in before publishing apps.');
+    openAuthModal('login');
+    return;
+  }
+  if (!db) {
+    alert('Cloud database unavailable right now.');
+    return;
+  }
   const name = document.getElementById('upload-name').value.trim();
   const category = document.getElementById('upload-category').value;
   const link = document.getElementById('upload-link').value.trim();
@@ -1323,6 +1336,20 @@ window.handleAppUpload = async function() {
 };
 
 window.deleteApp = async function(id) {
+  const app = APPS_DATA.find(a => a.id === id);
+  if (!currentUser) {
+    alert('Please sign in before deleting apps.');
+    openAuthModal('login');
+    return;
+  }
+  if (app && app.authorUid !== currentUser.uid) {
+    alert('You can only delete apps that were uploaded from your account.');
+    return;
+  }
+  if (!db) {
+    alert('Cloud database unavailable right now.');
+    return;
+  }
   if (!confirm('Delete this app from the cloud? This cannot be undone.')) return;
   try {
     await db.collection("apps").doc(id).delete();
@@ -1369,7 +1396,12 @@ window.openAppModal = async function(appId) {
   const ssGallery = document.getElementById('modal-screenshots');
   if (app.screenshots && app.screenshots.length > 0) {
     if (ssContainer) ssContainer.classList.remove('hidden');
-    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => `<img src="${escapeHtml(s)}" class="h-[220px] sm:h-[300px] w-[110px] sm:w-[150px] rounded-[1.25rem] object-cover shadow-md snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800" onerror="this.style.display='none'">`).join('');
+    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => {
+      const shotUrl = safeImageUrl(s, { allowData: true });
+      return shotUrl
+        ? `<img src="${escapeHtml(shotUrl)}" class="h-[220px] sm:h-[300px] w-[110px] sm:w-[150px] rounded-[1.25rem] object-cover shadow-md snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800" onerror="this.style.display='none'">`
+        : '';
+    }).filter(Boolean).join('');
   } else {
     if (ssContainer) ssContainer.classList.add('hidden');
     if (ssGallery) ssGallery.innerHTML = '';
@@ -1386,6 +1418,23 @@ window.openAppModal = async function(appId) {
   // Reset modal scroll position
   const scrollContainer = document.getElementById('modal-content-scroll');
   if (scrollContainer) scrollContainer.scrollTop = 0;
+};
+
+window.downloadSelectedApp = function() {
+  if (!selectedApp || !selectedApp.downloadLink) return;
+  const url = selectedApp.downloadLink.trim();
+  const isLocalAsset = /^(\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(url);
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  if (isLocalAsset || url.startsWith('blob:') || url.startsWith('data:')) {
+    link.download = url.split('/').pop() || `${selectedApp.title || 'download'}`;
+  } else {
+    link.target = '_blank';
+  }
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 };
 
 window.closeAppModal = function() {
@@ -1408,7 +1457,7 @@ window.setReviewRating = function(rating) {
       if (i < rating) {
         stars[i].className = "w-5 h-5 cursor-pointer text-blue-600 dark:text-blue-400 transition-colors";
       } else {
-        stars[i].className = "w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors";
+        stars[i].className = "w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-700 hover:text-blue-500 transition-colors";
       }
     }
   }
@@ -1551,12 +1600,12 @@ window.fetchReviews = async function(appId) {
       let replyHTML = '';
       if (r.reply) {
         replyHTML = `
-          <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-3.5 mt-3 border border-slate-200 dark:border-slate-800 text-[10px] space-y-1 ml-4 shadow-xs">
+          <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-3 mt-3 border border-slate-200 dark:border-slate-800 text-[10px] space-y-1 ml-4 shadow-sm">
             <div class="flex justify-between items-center text-slate-900 dark:text-white font-bold">
               <span>Developer Response</span>
               <span class="text-slate-400 dark:text-slate-500 font-normal">17/08/23</span>
             </div>
-            <p class="text-slate-650 dark:text-slate-400 leading-relaxed mt-1">${escapeHtml(r.reply)}</p>
+            <p class="text-slate-600 dark:text-slate-400 leading-relaxed mt-1">${escapeHtml(r.reply)}</p>
           </div>
         `;
       }
@@ -1566,7 +1615,7 @@ window.fetchReviews = async function(appId) {
           <!-- User Profile Row -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-355 flex items-center justify-center font-bold text-xs shadow-xs border border-slate-200/50 dark:border-slate-700/50">
+              <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs shadow-sm border border-slate-200/50 dark:border-slate-700/50">
                 ${initial}
               </div>
               <span class="text-xs font-semibold text-slate-900 dark:text-white">${escapeHtml(r.userName)}</span>
@@ -1586,8 +1635,8 @@ window.fetchReviews = async function(appId) {
           <div class="flex items-center justify-between mt-3 text-[10px] text-slate-500 dark:text-slate-400">
             <span>${helpful} ${helpful === 1 ? 'person' : 'people'} found this helpful</span>
             <div class="flex gap-2">
-              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">Yes</span>
-              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">No</span>
+              <span class="text-[9px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">Yes</span>
+              <span class="text-[9px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">No</span>
             </div>
           </div>
           <!-- Developer Reply -->
@@ -1605,7 +1654,7 @@ window.fetchReviews = async function(appId) {
       document.getElementById('modal-review-count-total').textContent = count;
       document.getElementById('modal-stat-rating-count').textContent = `${count} reviews`;
     } else {
-      listEl.innerHTML = '<p class="text-xs text-slate-550">No reviews yet. Be the first!</p>';
+      listEl.innerHTML = '<p class="text-xs text-slate-500">No reviews yet. Be the first!</p>';
       document.getElementById('modal-app-rating').textContent = '0.0';
       document.getElementById('modal-rating-huge').textContent = '0.0';
       document.getElementById('modal-review-count-total').textContent = '0';
@@ -1636,7 +1685,7 @@ window.fetchReviews = async function(appId) {
   }
 };
 
-window.submitReview = async function() {
+window.submitReview = async function(buttonEl) {
   if (!selectedApp) return;
   if (currentReviewRating === 0) return alert('Please select a star rating.');
   const text = document.getElementById('review-text').value.trim();
@@ -1662,7 +1711,7 @@ window.submitReview = async function() {
   }
   GUEST_REVIEWS_CACHE[selectedApp.id].unshift(newReview);
 
-  const btn = event.target;
+  const btn = buttonEl || document.activeElement;
   btn.textContent = 'Submitting...';
   btn.disabled = true;
 
@@ -1690,4 +1739,23 @@ window.submitReview = async function() {
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function safeImageUrl(url, { allowData = false, allowBlob = false } = {}) {
+  if (!url) return '';
+  const value = String(url).trim();
+  if (!value) return '';
+  if (/^(https?:\/\/|\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(value)) return value;
+  if (allowBlob && value.startsWith('blob:')) return value;
+  if (allowData && /^data:image\/[a-zA-Z0-9.+-]+;base64,[a-zA-Z0-9+/=\s]+$/.test(value)) return value;
+  return '';
+}
+
+function safeCssColor(value, fallback = '#05cd74') {
+  if (!value) return fallback;
+  const trimmed = String(value).trim();
+  if (/^(#[0-9a-f]{3,8}|rgb(a?)\([^)]*\)|hsl(a?)\([^)]*\)|var\(--[a-zA-Z0-9-_]+\))$/i.test(trimmed)) {
+    return trimmed;
+  }
+  return fallback;
 }
