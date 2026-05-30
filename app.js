@@ -12,9 +12,14 @@ const firebaseConfig = {
   measurementId: "G-L21CJ76K0V"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
+let firebaseApp = null, auth = null, db = null;
+try {
+  firebaseApp = initializeApp(firebaseConfig);
+  auth = getAuth(firebaseApp);
+  db = getFirestore(firebaseApp);
+} catch (e) {
+  console.error("Firebase failed to initialize statically:", e);
+}
 
 // ── SAFE LOCAL STORAGE WRAPPERS ──
 const safeStorage = {
@@ -111,8 +116,8 @@ window.toggleDarkModeAndReRender = function() {
   renderContent();
 };
 
-// ── INIT ──
-document.addEventListener('DOMContentLoaded', () => {
+// ── INIT FUNCTION ──
+function initializePlatform() {
   // Dark mode init (default true)
   if (safeStorage.getItem('hankstudio_dark_mode') !== 'false') {
     document.documentElement.classList.add('dark');
@@ -127,42 +132,53 @@ document.addEventListener('DOMContentLoaded', () => {
   renderBottomNav();
   updateHeaderAuth();
 
-  // Firebase Auth Listener
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUser = { 
-        name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
-        email: user.email || '', 
-        uid: user.uid, 
-        photoURL: user.photoURL 
-      };
-    } else {
-      currentUser = null;
-    }
-    safeStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
-    updateHeaderAuth();
-    if (activeTab === 'profile') renderContent(); 
-  });
-
-  // Firebase Firestore Listener
-  const q = query(collection(db, "apps"), orderBy("uploadedAt", "desc"));
-  onSnapshot(q, (snapshot) => {
-    APPS_DATA = [];
-    snapshot.forEach((doc) => {
-      APPS_DATA.push({ id: doc.id, ...doc.data() });
+  // Firebase Auth Listener (Defensively Guarded)
+  if (auth) {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = { 
+          name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
+          email: user.email || '', 
+          uid: user.uid, 
+          photoURL: user.photoURL 
+        };
+      } else {
+        currentUser = null;
+      }
+      safeStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
+      updateHeaderAuth();
+      if (activeTab === 'profile') renderContent(); 
     });
-    renderContent();
-  });
+  }
 
-  // Hide page loader unconditionally after a small timeout
+  // Firebase Firestore Listener (Defensively Guarded)
+  if (db) {
+    const q = query(collection(db, "apps"), orderBy("uploadedAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+      APPS_DATA = [];
+      snapshot.forEach((doc) => {
+        APPS_DATA.push({ id: doc.id, ...doc.data() });
+      });
+      renderContent();
+    });
+  }
+
+  // Hide page loader unconditionally after a blazingly fast timeout (150ms)
   setTimeout(() => {
     const loader = document.getElementById('page-loader');
     if (loader) {
       loader.classList.add('fade-out');
-      setTimeout(() => loader.style.display = 'none', 450);
+      setTimeout(() => loader.style.display = 'none', 400);
     }
-  }, 1200);
-});
+  }, 150);
+}
+
+// ── ROBUST READYSTATE CHECK ──
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializePlatform);
+} else {
+  initializePlatform();
+}
 
 // ── AUTH FUNCTIONS ──
 window.openAuthModal = function(view) {
