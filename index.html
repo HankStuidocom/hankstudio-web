@@ -265,31 +265,7 @@
     </div>
   </aside>
 
-  <!-- MOBILE DRAWER -->
-  <div id="mobile-drawer" class="fixed inset-0 z-50 flex lg:hidden hidden">
-    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleMobileMenu(false)"></div>
-    <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white h-full shadow-2xl animate-slide-in-left">
-      <div class="absolute top-4 right-4 z-10">
-        <button onclick="toggleMobileMenu(false)" class="p-1.5 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <div class="flex flex-col h-full bg-white">
-        <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-          <div class="flex items-center gap-3 cursor-pointer" onclick="setActiveTab('home'); toggleMobileMenu(false)">
-            <div id="mobile-logo-container" class="w-8 h-8 flex-shrink-0 shadow-sm rounded-xl overflow-hidden bg-brand"></div>
-            <span class="text-xl font-extrabold tracking-tight text-slate-900">HankStudio</span>
-          </div>
-        </div>
-        <div class="flex-1 overflow-y-auto py-6 px-4 flex flex-col justify-between">
-          <nav class="flex flex-col gap-1" id="mobile-nav"></nav>
-          <div class="border-t border-slate-100 pt-6">
-            <nav class="flex flex-col gap-1" id="mobile-nav-bottom"></nav>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- MOBILE DRAWER REMOVED -->
 
   <!-- MAIN CONTENT -->
   <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
@@ -297,9 +273,6 @@
     <!-- HEADER -->
     <header class="h-16 flex items-center justify-between px-4 lg:px-10 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-950 transition-colors duration-300 gap-3">
       <div class="flex items-center gap-3 flex-shrink-0">
-        <button onclick="toggleMobileMenu(true)" class="p-1.5 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-slate-50 transition-colors lg:hidden">
-          <i data-lucide="menu" class="w-6 h-6 stroke-[2.5]"></i>
-        </button>
         <div class="flex items-center gap-2 cursor-pointer" onclick="setActiveTab('home')">
           <div id="header-logo-container" class="w-7 h-7 shadow-sm rounded-xl overflow-hidden bg-brand"></div>
           <span class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">HankStudio</span>
@@ -323,7 +296,31 @@
       </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 animate-fade-in-up" id="main-content-viewport"></main>
+    <main class="flex-1 overflow-y-auto p-0 pb-20 lg:p-10 lg:pb-10 animate-fade-in-up relative" id="main-content-viewport"></main>
+    
+    <!-- MOBILE BOTTOM NAV -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center h-14 pb-1 z-40 px-2">
+      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="setActiveTab('home')">
+        <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Games</span>
+      </div>
+      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-brand" onclick="setActiveTab('apps')">
+        <i data-lucide="layout-grid" class="w-5 h-5 fill-brand/20"></i>
+        <span class="text-[10px] font-bold">Apps</span>
+      </div>
+      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="document.getElementById('global-search').focus()">
+        <i data-lucide="search" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Search</span>
+      </div>
+      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="setActiveTab('tools')">
+        <i data-lucide="book-open" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Books</span>
+      </div>
+      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="setActiveTab('profile')">
+        <i data-lucide="user" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">You</span>
+      </div>
+    </nav>
   </div>
 
   <!-- HANK AI CHAT BOX -->
@@ -832,117 +829,122 @@
 
   // ── HOME PAGE ──
   function renderHomeHTML() {
-    const catHTML = CATEGORIES.map(cat => {
-      const count = APPS_DATA.filter(a => a.category === cat.id).length;
-      return `<div onclick="setActiveTab('apps')" class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50 min-w-[210px] hover:bg-white hover:border-emerald-100 hover:shadow-sm transition-all cursor-pointer">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center ${cat.classes}">
-          <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <h3 class="font-bold text-slate-900 text-xs sm:text-sm">${cat.label}</h3>
-          <p class="text-[11px] text-slate-400">${count} app${count!==1?'s':''}</p>
-        </div>
-      </div>`;
-    }).join('');
+    const topTabs = ['For you', 'Top charts', 'Premium', 'Categories'];
+    const topTabsHTML = topTabs.map((tab, i) => `
+      <div class="px-4 py-3 whitespace-nowrap cursor-pointer text-[13px] font-medium ${i===0 ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}">
+        ${tab}
+      </div>
+    `).join('');
 
-    const recentApps = APPS_DATA.slice(-5).reverse();
-    const appsHTML = recentApps.length ? recentApps.map(app => `
-      <div class="bg-white border border-slate-150 rounded-[2rem] p-6 hover:shadow-lg transition-all flex flex-col justify-between">
-        <div>
-          <div class="w-16 h-16 rounded-2xl mb-4 overflow-hidden shadow-sm">${appCardHTML(app)}</div>
-          <h3 class="font-bold text-slate-900 text-sm mb-1 truncate">${escapeHtml(app.title)}</h3>
-          <p class="text-xs text-slate-400 mb-2 font-medium">${escapeHtml(app.category)}</p>
-          <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">${escapeHtml(app.description)}</p>
-        </div>
-        <button onclick="openAppModal(${app.id})" class="w-full py-2.5 rounded-xl border border-slate-200 text-brand hover:bg-brand hover:text-white hover:border-transparent font-extrabold transition-all text-xs">
-          View & Download
-        </button>
-      </div>`).join('') :
-      `<div class="col-span-full text-center py-10 text-slate-400">
-        <p class="text-sm font-semibold">No apps yet.</p>
-        <p class="text-xs mt-1">Apps uploaded by developers will appear here.</p>
-      </div>`;
+    const pills = ['app', 'game', 'tools', 'new release'];
+    const pillsHTML = pills.map(p => `
+      <div class="px-4 py-1.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-[11px] font-medium cursor-pointer whitespace-nowrap hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+        ${p}
+      </div>
+    `).join('');
 
-    return `
-      <div class="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-14">
-        <!-- HERO -->
-        <section class="bg-[#090f1c] rounded-[2.5rem] p-8 lg:p-14 relative overflow-hidden flex items-center min-h-[360px] shadow-xl border border-slate-900/60">
-          <div class="absolute right-0 bottom-0 w-[450px] h-[350px] bg-[radial-gradient(circle_at_bottom_right,#05cd7440_0%,#062e1e20_50%,transparent_100%)] pointer-events-none rounded-[2.5rem]"></div>
-          <div class="relative z-10 max-w-xl">
-            <h1 class="text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-5 tracking-tight">
-              Discover. Download.<br/>Create with <span class="text-brand">HankStudio</span>
-            </h1>
-            <p class="text-slate-400 text-sm sm:text-base mb-8 max-w-md leading-relaxed">
-              Your trusted place to discover and download powerful software, tools, and apps — safely.
-            </p>
-            <div class="flex flex-wrap gap-4">
-              <button onclick="setActiveTab('apps')" class="bg-brand hover:bg-brand-hover text-white px-7 py-3.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-md text-sm sm:text-base hover:scale-105">
-                Explore Apps <i data-lucide="chevron-right" class="w-4 h-4 stroke-[2.5]"></i>
-              </button>
-            </div>
+    const featuredApp = APPS_DATA.find(a => a.category === 'Games') || APPS_DATA[0];
+    let bannerHTML = '';
+    if (featuredApp) {
+      bannerHTML = `
+        <div class="relative w-full h-[280px] sm:h-[340px] rounded-[1.5rem] overflow-hidden cursor-pointer group shadow-sm border border-slate-200 dark:border-slate-800" onclick="openAppModal('${featuredApp.id}')">
+          <div class="absolute inset-0 bg-slate-900">
+            ${featuredApp.iconDataUrl ? `<img src="${featuredApp.iconDataUrl}" class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700">` : ''}
           </div>
-        </section>
-
-        <!-- CATEGORIES -->
-        <section>
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Top categories</h2>
-            <button onclick="setActiveTab('apps')" class="text-xs sm:text-sm font-bold text-brand hover:text-brand-hover">View all</button>
-          </div>
-          <div class="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 lg:mx-0 lg:px-0 hide-scrollbar">
-            ${catHTML}
-          </div>
-        </section>
-
-        <!-- RECENT APPS -->
-        <section>
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Recent uploads</h2>
-            <button onclick="setActiveTab('apps')" class="text-xs sm:text-sm font-bold text-brand hover:text-brand-hover">View all</button>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">${appsHTML}</div>
-        </section>
-
-        <!-- FEATURES -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-10 border-t border-slate-100">
-          ${[['shield','Safe & Secure','All apps are reviewed and verified before listing.'],['download','Real Downloads','Direct download links — no fake alerts.'],['refresh-cw','Always Updated','Developers push updates at any time.'],['heart','Trusted Platform','Built for users who care about quality.']].map(([ic,t,d])=>`
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-brand flex-shrink-0">
-              <i data-lucide="${ic}" class="w-5 h-5 stroke-[2.5]"></i>
-            </div>
-            <div><h4 class="font-bold text-slate-900 text-sm mb-1">${t}</h4><p class="text-xs text-slate-500 leading-relaxed">${d}</p></div>
-          </div>`).join('')}
-        </section>
-
-        <!-- FOOTER -->
-        <footer class="bg-[#030e12] text-slate-400 py-16 px-6 lg:px-10 rounded-t-[2.5rem] border-t border-slate-900 -mx-4 sm:-mx-6 lg:-mx-10">
-          <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div>
-              <div class="flex items-center gap-2.5 mb-4 text-white cursor-pointer" onclick="setActiveTab('home')">
-                <div class="w-7 h-7 rounded bg-brand flex items-center justify-center text-white font-bold text-xs">H</div>
-                <span class="text-xl font-bold tracking-tight">HankStudio</span>
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent flex flex-col justify-end p-5 sm:p-6">
+            <span class="bg-white text-slate-900 text-[10px] font-bold px-3 py-1.5 rounded-full w-max mb-3 shadow-sm">Coming soon</span>
+            <h2 class="text-white text-xl sm:text-2xl font-medium leading-tight mb-4 tracking-tight drop-shadow-sm">${featuredApp.title}</h2>
+            
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] overflow-hidden shadow-md flex-shrink-0 bg-slate-800 border border-slate-700">
+                ${appCardHTML(featuredApp)}
               </div>
-              <p class="text-xs leading-relaxed max-w-xs">Your premium portal to discover, download, and create powerful software.</p>
-            </div>
-            <div>
-              <h5 class="text-white font-bold text-sm mb-4">Explore</h5>
-              <ul class="space-y-3 text-xs">
-                ${NAV_ITEMS.map(n=>`<li><button onclick="setActiveTab('${n.id}')" class="hover:text-brand transition-colors">${n.label}</button></li>`).join('')}
-              </ul>
-            </div>
-            <div>
-              <h5 class="text-white font-bold text-sm mb-4">Developer</h5>
-              <ul class="space-y-3 text-xs">
-                <li><button onclick="openDeveloperModal()" class="hover:text-brand transition-colors">🔒 Developer Portal</button></li>
-                <li><button onclick="openDeveloperModal()" class="hover:text-brand transition-colors">Upload Software</button></li>
-              </ul>
+              <div class="flex-1 min-w-0">
+                <h3 class="text-white text-sm font-medium truncate">${escapeHtml(featuredApp.title)}</h3>
+                <p class="text-slate-300 text-[11px] truncate">${escapeHtml(featuredApp.authorName)}</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="bg-slate-800 text-slate-300 text-[9px] px-1.5 py-0.5 rounded border border-slate-600 font-bold">12+</span>
+                  <span class="text-slate-400 text-[10px]">Rated for 12+</span>
+                </div>
+              </div>
+              <button class="bg-blue-200 hover:bg-blue-300 text-blue-900 px-6 py-2 rounded-full font-medium text-[13px] shadow-sm transition-colors">Install</button>
             </div>
           </div>
-          <div class="max-w-7xl mx-auto mt-10 pt-6 border-t border-slate-900 text-center">
-            <p class="text-xs text-slate-500">© 2026 HankStudio. All rights reserved.</p>
+        </div>
+      `;
+    }
+
+    const suggestedApps = [...APPS_DATA].reverse().slice(0, 3);
+    const suggestedHTML = suggestedApps.map(app => `
+      <div class="flex items-center gap-4 py-2.5 cursor-pointer group" onclick="openAppModal('${app.id}')">
+        <div class="w-[60px] h-[60px] rounded-[1.1rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">${appCardHTML(app)}</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-medium text-slate-900 dark:text-white text-[13px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
+          <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • Single player</p>
+          <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">4.4 <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
+            <span>•</span>
+            <span>${app.size || '268 MB'}</span>
           </div>
-        </footer>
-      </div>`;
+        </div>
+      </div>
+    `).join('');
+
+    const games = APPS_DATA.filter(a => a.category === 'Games');
+    const gamesHTML = games.length ? games.map(app => `
+      <div class="w-[104px] flex flex-col gap-2.5 cursor-pointer flex-shrink-0 group" onclick="openAppModal('${app.id}')">
+        <div class="w-[104px] h-[104px] rounded-[1.25rem] overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">${appCardHTML(app)}</div>
+        <div class="min-w-0">
+          <h3 class="font-medium text-slate-900 dark:text-white text-[11px] leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
+          <div class="flex items-center gap-1 mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+            <span>4.6</span><i data-lucide="star" class="w-2.5 h-2.5 fill-slate-500"></i>
+          </div>
+        </div>
+      </div>
+    `).join('') : '<p class="text-xs text-slate-500">No games yet.</p>';
+
+    return \`
+      <div class="max-w-2xl mx-auto pb-6">
+        <!-- Top Scrollable Tabs -->
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-slate-50 dark:bg-slate-900 z-30 pt-1">
+          \${topTabsHTML}
+        </div>
+        
+        <!-- Filter Pills -->
+        <div class="flex overflow-x-auto gap-2.5 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 mt-4 mb-4">
+          \${pillsHTML}
+        </div>
+
+        <!-- Featured Banner -->
+        <section class="mt-2 -mx-4 sm:mx-0">
+          \${bannerHTML || emptyState('image', 'No Apps', 'Upload an app to see the banner.')}
+        </section>
+
+        <!-- Suggested List -->
+        <section class="mt-6 px-1">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-[13px] font-medium text-slate-900 dark:text-white flex items-center gap-2">
+              Sponsored <span class="text-[8px] text-slate-400">•</span> Suggested for You
+            </h2>
+            <i data-lucide="more-vertical" class="w-4 h-4 text-slate-500 cursor-pointer"></i>
+          </div>
+          <div class="flex flex-col">
+            \${suggestedHTML || emptyState('list', 'No Apps', 'Upload apps to see suggestions.')}
+          </div>
+        </section>
+
+        <!-- Horizontal Scroller -->
+        <section class="mt-4 pt-5 border-t border-slate-200 dark:border-slate-800/50 px-1">
+          <div class="flex items-center justify-between mb-4 cursor-pointer group">
+            <h2 class="text-[15px] font-medium text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Fantasy setting games</h2>
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"></i>
+          </div>
+          <div class="flex overflow-x-auto gap-3.5 hide-scrollbar pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+            \${gamesHTML}
+          </div>
+        </section>
+      </div>
+    \`;
   }
 
   // ── APPS PAGE ──
@@ -1101,6 +1103,13 @@
               class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all resize-none"></textarea>
           </div>
 
+          <!-- App Size -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">App Size (e.g. 268 MB) <span class="text-red-400">*</span></label>
+            <input id="upload-size" type="text" placeholder="e.g. 268 MB, 1.2 GB"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"/>
+          </div>
+
           <!-- App Info -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">App Info (version, platform, size, etc.)</label>
@@ -1158,6 +1167,7 @@
     const link = document.getElementById('upload-link').value.trim();
     const desc = document.getElementById('upload-desc').value.trim();
     const info = document.getElementById('upload-info').value.trim();
+    const size = document.getElementById('upload-size').value.trim();
     const screenshotsRaw = document.getElementById('upload-screenshots').value.trim();
     const errEl = document.getElementById('upload-error');
     const successEl = document.getElementById('upload-success');
@@ -1180,6 +1190,7 @@
         category,
         description: desc,
         appInfo: info,
+        size: size || 'Unknown',
         iconDataUrl: uploadIconData,
         downloadLink: link,
         screenshots: screenshotsRaw ? screenshotsRaw.split(',').map(s=>s.trim()).filter(s=>s) : [],
@@ -1192,7 +1203,7 @@
 
       successEl.innerHTML = `✔ <strong>"${escapeHtml(name)}"</strong> has been published to the cloud!`;
       
-      ['upload-name','upload-desc','upload-info','upload-link','upload-screenshots'].forEach(id => document.getElementById(id).value = '');
+      ['upload-name','upload-desc','upload-info','upload-size','upload-link','upload-screenshots'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('upload-category').value = '';
       document.getElementById('upload-icon').value = '';
       document.getElementById('icon-preview').classList.remove('show');
