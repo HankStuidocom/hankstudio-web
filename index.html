@@ -183,10 +183,11 @@
   <div class="flex-1 flex flex-col min-w-0 h-full w-full relative overflow-hidden bg-white dark:bg-[#121212] transition-colors duration-300">
 
     <!-- HEADER (Dark mode button removed from top tray) -->
-    <header class="h-16 flex items-center justify-between px-4 border-b border-slate-250 dark:border-slate-800 shrink-0 bg-white dark:bg-[#121212] transition-colors duration-300 gap-3">
+    <header class="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-[#121212] transition-colors duration-300 gap-3">
       <div class="flex items-center gap-3 flex-shrink-0">
-        <div class="flex items-center gap-2 cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-all duration-200" onclick="setActiveTab('apps')">
+        <div class="flex items-center gap-2.5 cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-all duration-200" onclick="setActiveTab('apps')">
           <div id="header-logo-container" class="w-8 h-8 shadow-sm rounded-xl overflow-hidden bg-brand"></div>
+          <span class="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">HankStudio App</span>
         </div>
       </div>
 
@@ -221,7 +222,7 @@
       
       <!-- Top Action Navigation Bar -->
       <div class="h-14 flex items-center justify-between px-4 shrink-0 bg-white dark:bg-[#121212] z-10 transition-colors">
-        <button onclick="closeAppModal()" class="p-2 rounded-full text-slate-650 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-850 active:scale-90 transition-all duration-200">
+        <button onclick="closeAppModal()" class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200">
           <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </button>
         <div class="flex items-center gap-3">
@@ -229,7 +230,7 @@
             <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i>
             <span>57</span>
           </div>
-          <button class="p-2 rounded-full text-slate-650 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-850 active:scale-90 transition-all duration-200">
+          <button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200">
             <i data-lucide="more-vertical" class="w-5 h-5"></i>
           </button>
         </div>
@@ -240,7 +241,7 @@
         
         <!-- Main Icon & Title Information Row -->
         <div class="flex gap-4.5 pt-2 items-start">
-          <div id="modal-app-icon" class="w-20 h-20 rounded-[1.25rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-850"></div>
+          <div id="modal-app-icon" class="w-20 h-20 rounded-[1.25rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-800"></div>
           <div class="flex-1 min-w-0">
             <h3 id="modal-app-title" class="text-base sm:text-lg font-bold text-slate-950 dark:text-white tracking-tight leading-snug truncate">App Title</h3>
             <p id="modal-app-meta" class="text-xs sm:text-sm font-semibold text-emerald-500 mt-0.5 truncate">Developer Name</p>
@@ -261,24 +262,25 @@
           <!-- Stat 1: Ratings -->
           <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-850/60">
             <span class="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-0.5">
-              <span id="modal-app-rating">4.8</span> <i data-lucide="star" class="w-3 h-3 fill-slate-900 dark:fill-white text-slate-900 dark:text-white"></i>
+              <span id="modal-app-rating">3.7</span> <i data-lucide="star" class="w-3 h-3 fill-slate-900 dark:fill-white text-slate-900 dark:text-white"></i>
             </span>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1" id="modal-stat-rating-count">125 reviews</span>
+            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center" id="modal-stat-rating-count">
+              7 reviews <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-550"></i>
+            </span>
           </div>
           <!-- Stat 2: Content Rating -->
           <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-850/60">
             <span class="text-[9px] font-extrabold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-750 px-1 py-0.2 rounded font-mono">3+</span>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1">Rated for 3+</span>
+            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center">
+              Rated for 3+ <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-550"></i>
+            </span>
           </div>
           <!-- Stat 3: Size -->
-          <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-850/60">
-            <span class="text-xs font-extrabold text-slate-900 dark:text-white" id="modal-stat-size">8.8 MB</span>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1">Download Size</span>
-          </div>
-          <!-- Stat 4: Downloads -->
           <div class="flex-1 flex flex-col items-center">
-            <span class="text-xs font-extrabold text-slate-900 dark:text-white">10K+</span>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1">Downloads</span>
+            <div class="text-xs font-extrabold text-slate-900 dark:text-white flex items-center justify-center">
+              <i data-lucide="download" class="w-3.5 h-3.5 text-slate-900 dark:text-white"></i>
+            </div>
+            <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1" id="modal-stat-size">16 MB</span>
           </div>
         </div>
 
@@ -297,7 +299,7 @@
           </div>
           <p id="modal-app-desc" class="text-slate-600 dark:text-slate-400 leading-relaxed text-xs sm:text-sm line-clamp-4"></p>
           <div class="flex flex-wrap gap-2 pt-1" id="modal-category-chips">
-            <span class="text-[10px] sm:text-xs font-semibold bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 text-slate-650 dark:text-slate-350 px-3.5 py-1.5 rounded-full cursor-pointer hover:border-slate-300 dark:hover:border-slate-600" id="modal-category-chip">Education</span>
+            <span class="text-[10px] sm:text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 px-3.5 py-1.5 rounded-full cursor-pointer hover:border-slate-300 dark:hover:border-slate-600" id="modal-category-chip">Education</span>
           </div>
         </div>
 
@@ -307,26 +309,26 @@
             <h4 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white uppercase tracking-wider">Data safety</h4>
             <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
           </div>
-          <p class="text-[11px] text-slate-500 dark:text-slate-450 leading-relaxed">Safety starts with understanding how developers collect and share your data. Data privacy and security practices may vary based on your use, region, and age.</p>
-          <div class="border border-slate-150 dark:border-slate-850 rounded-2xl p-4.5 space-y-4 bg-slate-50/50 dark:bg-slate-900/30">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Safety starts with understanding how developers collect and share your data. Data privacy and security practices may vary based on your use, region, and age.</p>
+          <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4.5 space-y-4 bg-slate-50/50 dark:bg-slate-900/30">
             <div class="flex items-start gap-4">
-              <i data-lucide="share-2" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-450 shrink-0 mt-0.5"></i>
+              <i data-lucide="share-2" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
               <div>
-                <p class="text-xs font-bold text-slate-850 dark:text-white">No data shared with third parties</p>
-                <p class="text-[10px] text-slate-500 dark:text-slate-550 mt-0.5"><span class="underline cursor-pointer">Learn more</span> about how developers declare sharing</p>
+                <p class="text-xs font-bold text-slate-800 dark:text-white">No data shared with third parties</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5"><span class="underline cursor-pointer">Learn more</span> about how developers declare sharing</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
-              <i data-lucide="cloud-off" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-450 shrink-0 mt-0.5"></i>
+              <i data-lucide="cloud-off" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
               <div>
-                <p class="text-xs font-bold text-slate-850 dark:text-white">No data collected</p>
-                <p class="text-[10px] text-slate-500 dark:text-slate-550 mt-0.5"><span class="underline cursor-pointer">Learn more</span> about how developers declare collection</p>
+                <p class="text-xs font-bold text-slate-800 dark:text-white">No data collected</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5"><span class="underline cursor-pointer">Learn more</span> about how developers declare collection</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
-              <i data-lucide="minus-circle" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-450 shrink-0 mt-0.5"></i>
+              <i data-lucide="minus-circle" class="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5"></i>
               <div>
-                <p class="text-xs font-bold text-slate-850 dark:text-white">App doesn't provide a way to request data deletion</p>
+                <p class="text-xs font-bold text-slate-800 dark:text-white">App doesn't provide a way to request data deletion</p>
               </div>
             </div>
             <p class="text-[10px] text-blue-600 dark:text-blue-400 font-bold cursor-pointer hover:underline pt-1">See details</p>
@@ -336,7 +338,7 @@
 
 
         <!-- Ratings & Reviews Section -->
-        <div class="border-t border-slate-100 dark:border-slate-850/60 pt-4.5 space-y-4">
+        <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4.5 space-y-4">
           <div class="flex justify-between items-center cursor-pointer hover:opacity-80 transition-opacity">
             <h4 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white uppercase tracking-wider">Ratings and reviews</h4>
             <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
@@ -347,13 +349,13 @@
             <div class="flex flex-col items-center">
               <span class="text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight" id="modal-rating-huge">0.0</span>
               <div class="flex gap-0.5 mt-1" id="modal-reviews-stars-summary">
-                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>
-                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>
-                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>
-                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>
-                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>
+                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-700"></i>
+                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-700"></i>
+                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-700"></i>
+                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-700"></i>
+                <i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-700"></i>
               </div>
-              <span class="text-[9px] text-slate-450 dark:text-slate-500 mt-1" id="modal-review-count-total">0</span>
+              <span class="text-[9px] text-slate-500 dark:text-slate-400 mt-1" id="modal-review-count-total">0</span>
             </div>
             <!-- Progress bars for distribution (Styled cleanly) -->
             <div class="flex-1 space-y-1 text-[9px] font-bold text-slate-500">
@@ -394,17 +396,20 @@
           <div id="modal-reviews-list" class="space-y-4 pr-1"></div>
           
           <!-- Leave a Review Form (Google Play Style) -->
-          <div id="review-form-container" class="bg-slate-50 dark:bg-[#1E1E1E] p-4.5 rounded-2xl border border-slate-150 dark:border-slate-805 mt-4">
-            <p class="text-xs font-bold text-slate-850 dark:text-white mb-2">Rate this app</p>
-            <p class="text-[10px] text-slate-450 dark:text-slate-500 -mt-1.5 mb-3">Tell others what you think</p>
+          <div id="review-form-container" class="bg-slate-50 dark:bg-[#1E1E1E] p-4.5 rounded-2xl border border-slate-200 dark:border-slate-800 mt-4">
+            <p class="text-xs font-bold text-slate-800 dark:text-white mb-2">Rate this app</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 -mt-1.5 mb-3">Tell others what you think</p>
             <div class="flex gap-1.5 mb-4" id="review-star-selector">
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors" onclick="setReviewRating(1)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors" onclick="setReviewRating(2)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors" onclick="setReviewRating(3)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors" onclick="setReviewRating(4)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors" onclick="setReviewRating(5)"></i>
+              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(1)"></i>
+              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(2)"></i>
+              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(3)"></i>
+              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(4)"></i>
+              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(5)"></i>
             </div>
-            <textarea id="review-text" rows="2" placeholder="Describe your experience (optional)..." class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-850 dark:text-white outline-none focus:border-blue-500 mb-2.5 resize-none shadow-xs"></textarea>
+            <div id="review-name-field" class="mb-2.5">
+              <input id="review-username" type="text" placeholder="Your name (optional for guests)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 shadow-xs"/>
+            </div>
+            <textarea id="review-text" rows="2" placeholder="Describe your experience (optional)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 mb-2.5 resize-none shadow-xs"></textarea>
             <button onclick="submitReview()" class="w-full bg-emerald-600 dark:bg-[#B8CCF6] hover:bg-emerald-700 dark:hover:bg-[#a5bceb] text-white dark:text-[#243B63] font-bold py-2 rounded-xl text-xs transition-all duration-200 active:scale-95 shadow-sm">Submit Review</button>
             <p id="review-auth-msg" class="text-[10px] text-red-500 mt-2 hidden">Log in to leave a review.</p>
           </div>

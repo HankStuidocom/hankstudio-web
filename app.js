@@ -65,21 +65,25 @@ const ATTENDEASE_APP = {
   id: 'attendease-app',
   title: 'AttendEase',
   category: 'Productivity',
-  description: 'AttendEase is a highly efficient, automated attendance tracking and check-in mobile application designed for schools, universities, and corporate events. Featuring digital registers, detailed reports, and real-time synchronization, managing check-ins has never been easier or more reliable.',
-  appInfo: 'Version: 1.0.0\nSize: 8.8 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: HankStudio',
-  size: '8.8 MB',
+  description: 'AttendEase is a highly efficient, automated attendance attendance tracking and check-in mobile application designed for schools, universities, and corporate events. Featuring digital registers, detailed reports, and real-time synchronization, managing check-ins has never been easier or more reliable.',
+  appInfo: 'Version: 1.0.0\nSize: 16 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: Jai Techno',
+  size: '16 MB',
   iconDataUrl: 'downloads/attendease_logo.png',
   bannerDataUrl: 'downloads/attendease_banner.png',
   downloadLink: 'downloads/AttendEase.apk',
-  screenshots: [],
+  screenshots: [
+    'downloads/attendease_ss1.jpg',
+    'downloads/attendease_ss2.jpg',
+    'downloads/attendease_ss3.jpg'
+  ],
   authorUid: 'hankstudio-developer',
-  authorName: 'HankStudio Developer',
+  authorName: 'Jai Techno',
   uploadedAt: '2026-05-30T00:00:00.000Z',
   isSponsored: true
 };
 
 // ── APP DATA (Cloud Firebase state) ──
-let APPS_DATA = [];
+let APPS_DATA = [ATTENDEASE_APP];
 
 const NAV_ITEMS = [
   { id: 'apps',         icon: 'layout-grid', label: 'Apps' },
@@ -123,8 +127,14 @@ try {
 
 // ── DARK MODE PERSISTENCE ──
 function toggleDarkMode() {
-  document.documentElement.classList.toggle('dark');
-  const isDark = document.documentElement.classList.contains('dark');
+  const isDark = !document.documentElement.classList.contains('dark');
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+    document.body.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.body.classList.remove('dark');
+  }
   safeStorage.setItem('hankstudio_dark_mode', isDark);
 }
 
@@ -133,11 +143,87 @@ window.toggleDarkModeAndReRender = function() {
   renderContent();
 };
 
+// ── FIREBASE REVIEWS SEEDING ──
+async function seedDefaultReviewsIfEmpty(appId) {
+  if (!db) return;
+  try {
+    const reviewsRef = db.collection(`apps/${appId}/reviews`);
+    const snap = await reviewsRef.limit(1).get();
+    if (snap.empty) {
+      console.log(`Seeding default reviews for ${appId}...`);
+      const defaultReviews = [
+        {
+          userName: "Mr Asad Pathan",
+          rating: 1,
+          comment: "very bad This is the worst app in the world. This app never works. We have never seen a worse app than this.",
+          timestamp: "2025-08-22T19:23:00.000Z",
+          helpfulCount: 2
+        },
+        {
+          userName: "Arun Kumar",
+          rating: 5,
+          comment: "Excellent app! Face attendance works fast and accurate. Very helpful for payroll management.",
+          timestamp: "2025-08-15T09:30:00.000Z",
+          helpfulCount: 15
+        },
+        {
+          userName: "Sneha Patil",
+          rating: 5,
+          comment: "Highly recommended for site management. Easy tracking and great interface.",
+          timestamp: "2025-08-10T14:20:00.000Z",
+          helpfulCount: 8
+        },
+        {
+          userName: "Rahul Sharma",
+          rating: 5,
+          comment: "Best HR payroll suite I have used. Clean design and dynamic dashboard.",
+          timestamp: "2025-08-05T11:15:00.000Z",
+          helpfulCount: 12
+        },
+        {
+          userName: "John Doe",
+          rating: 5,
+          comment: "Works perfectly on my device. Seamless check-in and checkout system.",
+          timestamp: "2025-07-28T08:45:00.000Z",
+          helpfulCount: 4
+        },
+        {
+          userName: "Meera Nair",
+          rating: 4,
+          comment: "Very useful suite, payroll is dynamic and easy to configure. A few minor lags but overall awesome.",
+          timestamp: "2025-07-20T10:00:00.000Z",
+          helpfulCount: 7
+        },
+        {
+          userName: "Vijay Prasad",
+          rating: 1,
+          comment: "App crashes on launch. Very disappointed, needs immediate fixing.",
+          timestamp: "2025-07-15T15:30:00.000Z",
+          helpfulCount: 9
+        }
+      ];
+      for (const rev of defaultReviews) {
+        await reviewsRef.add({
+          userId: 'default_seed_' + Math.random().toString(36).substring(2, 9),
+          ...rev
+        });
+      }
+      console.log(`Seeding complete for ${appId}.`);
+    }
+  } catch (e) {
+    console.error(`Error seeding reviews for ${appId}:`, e);
+  }
+}
+
 // ── INIT FUNCTION ──
 function initializePlatform() {
   // Dark mode init (default true)
   if (safeStorage.getItem('hankstudio_dark_mode') !== 'false') {
     document.documentElement.classList.add('dark');
+    document.body.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.body.classList.remove('dark');
   }
 
   ['desktop-logo-container','mobile-logo-container','header-logo-container'].forEach(id => {
@@ -148,6 +234,9 @@ function initializePlatform() {
   renderContent();
   renderBottomNav();
   updateHeaderAuth();
+  
+  // Seed reviews dynamically
+  seedDefaultReviewsIfEmpty('attendease-app');
 
   // Firebase Auth Listener (Defensively Guarded)
   if (auth) {
@@ -320,12 +409,12 @@ function updateHeaderAuth() {
       : `<span class="text-xs font-bold text-white uppercase">${escapeHtml(displayName.charAt(0))}</span>`;
     
     area.innerHTML = `
-      <button onclick="setActiveTab('profile')" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border border-slate-250 dark:border-slate-800 shadow-sm hover:scale-105 active:scale-[0.93] transition-all duration-200 overflow-hidden animate-fade-in" title="View Profile">
+      <button onclick="setActiveTab('profile')" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-105 active:scale-[0.93] transition-all duration-200 overflow-hidden animate-fade-in" title="View Profile">
         ${avatarContent}
       </button>`;
   } else {
     area.innerHTML = `
-      <button onclick="openAuthModal('login')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-205 dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 active:scale-[0.93] transition-all duration-200 animate-fade-in" title="Sign In">
+      <button onclick="openAuthModal('login')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 active:scale-[0.93] transition-all duration-200 animate-fade-in" title="Sign In">
         <i data-lucide="user" class="w-4 h-4"></i>
       </button>`;
   }
@@ -498,17 +587,17 @@ function renderProfileHTML() {
   
   // Dynamic settings card for dark mode toggle button
   const toggleCardHtml = `
-    <div class="bg-white dark:bg-[#1E1E1E] border border-slate-250 dark:border-slate-800 rounded-[1.5rem] p-5 flex items-center justify-between shadow-sm">
+    <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-5 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-3">
         <div class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
           <i data-lucide="${isDarkModeActive ? 'sun' : 'moon'}" class="w-5 h-5"></i>
         </div>
         <div>
           <p class="text-xs font-bold text-slate-900 dark:text-white">Dark Theme Mode</p>
-          <p class="text-[10px] text-slate-500 dark:text-slate-400">Toggle dark or light color styles</p>
+          <p class="text-[10px] text-slate-505 dark:text-slate-400">Toggle dark or light color styles</p>
         </div>
       </div>
-      <button onclick="toggleDarkModeAndReRender()" class="px-4 py-2 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-200 text-xs font-extrabold rounded-full transition-all border border-slate-250 dark:border-slate-700 shadow-xs cursor-pointer">
+      <button onclick="toggleDarkModeAndReRender()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-extrabold rounded-full transition-all border border-slate-200 dark:border-slate-700 shadow-xs cursor-pointer">
         ${isDarkModeActive ? 'Switch to Light' : 'Switch to Dark'}
       </button>
     </div>
@@ -790,7 +879,7 @@ function renderHomeHTML() {
   if (activeSubTab === 'top-charts') {
     const games = APPS_DATA.filter(a => a.category === 'Games');
     const html = games.length ? games.map((app, i) => `
-      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
         <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
         <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
@@ -816,7 +905,7 @@ function renderHomeHTML() {
   if (activeSubTab === 'premium') {
     const games = APPS_DATA.filter(a => a.category === 'Games');
     const html = games.length ? games.map(app => `
-      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
         <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
           <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
@@ -845,7 +934,7 @@ function renderHomeHTML() {
     const html = CATEGORIES.map(cat => {
       const count = APPS_DATA.filter(a => a.category === cat.id).length;
       return `
-        <div onclick="searchCategory('${cat.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 rounded-3xl p-5 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between h-[120px] group">
+        <div onclick="searchCategory('${cat.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between h-[120px] group">
           <div class="flex items-center justify-between">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center ${cat.classes ? cat.classes : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'}">
               <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
@@ -882,13 +971,13 @@ function renderHomeHTML() {
           <span class="absolute top-3 left-3 bg-white/90 dark:bg-black/80 text-slate-900 dark:text-white text-[9px] font-bold px-2.5 py-1 rounded-md z-10 shadow-sm">Coming soon</span>
           ${(featuredApp.bannerDataUrl || featuredApp.iconDataUrl) 
             ? `<img src="${featuredApp.bannerDataUrl || featuredApp.iconDataUrl}" class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700">`
-            : `<div class="w-full h-full bg-slate-850 flex items-center justify-center"><i data-lucide="image" class="w-10 h-10 text-slate-650"></i></div>`
+            : `<div class="w-full h-full bg-slate-800 flex items-center justify-center"><i data-lucide="image" class="w-10 h-10 text-slate-400"></i></div>`
           }
         </div>
         <!-- Card App Info Row (Google Play Store Style Layout) -->
         <div class="p-4 flex items-center justify-between gap-3 bg-white dark:bg-[#1E1E1E] border-t border-slate-100 dark:border-slate-800/50">
           <div class="flex items-center gap-3.5 min-w-0 cursor-pointer flex-1" onclick="openAppModal('${featuredApp.id}')">
-            <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden shadow-sm border border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-805">
+            <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800">
               ${appCardHTML(featuredApp, true)}
             </div>
             <div class="min-w-0">
@@ -995,8 +1084,8 @@ function renderHomeHTML() {
 function renderAppsHTML(filterFn) {
   const apps = filterFn ? APPS_DATA.filter(filterFn) : APPS_DATA;
   const html = apps.length ? apps.map(app => `
-    <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
-      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+    <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
       <div class="flex-1 min-w-0">
         <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
         <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
@@ -1032,9 +1121,9 @@ function renderToolsHTML() {
 
 function renderTopChartsHTML() {
   const html = APPS_DATA.length ? APPS_DATA.map((app, i) => `
-    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
       <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
-      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
       <div class="flex-1 min-w-0">
         <h3 class="font-bold text-slate-900 dark:text-white truncate text-xs">${escapeHtml(app.title)}</h3>
         <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
@@ -1052,8 +1141,8 @@ function renderTopChartsHTML() {
 function renderNewReleasesHTML() {
   const apps = [...APPS_DATA].reverse();
   const html = apps.length ? apps.map(app => `
-    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
-      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
       <div class="flex-1 min-w-0">
         <h3 class="font-bold text-slate-900 dark:text-white truncate text-xs">${escapeHtml(app.title)}</h3>
         <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
@@ -1077,7 +1166,7 @@ function renderSearchHTML() {
         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
         <input type="text" id="global-search-input" oninput="handleSearchOnPage(this.value)"
           placeholder="Search for apps, games, tools..."
-          class="w-full bg-slate-100 dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm rounded-full pl-9 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"/>
+          class="w-full bg-slate-100 dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm rounded-full pl-9 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"/>
       </div>
 
       <!-- Trending Searches -->
@@ -1136,8 +1225,8 @@ window.handleSearchOnPage = function(query) {
 
     if (filtered.length) {
       resultsArea.innerHTML = filtered.map(app => `
-        <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md transition-all flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+        <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md transition-all flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
           <div class="flex-1 min-w-0">
             <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
@@ -1280,7 +1369,7 @@ window.openAppModal = async function(appId) {
   const ssGallery = document.getElementById('modal-screenshots');
   if (app.screenshots && app.screenshots.length > 0) {
     if (ssContainer) ssContainer.classList.remove('hidden');
-    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => `<img src="${escapeHtml(s)}" class="h-32 md:h-48 rounded-xl object-cover shadow-sm snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800" onerror="this.style.display='none'">`).join('');
+    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => `<img src="${escapeHtml(s)}" class="h-[220px] sm:h-[300px] w-[110px] sm:w-[150px] rounded-[1.25rem] object-cover shadow-md snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800" onerror="this.style.display='none'">`).join('');
   } else {
     if (ssContainer) ssContainer.classList.add('hidden');
     if (ssGallery) ssGallery.innerHTML = '';
@@ -1325,30 +1414,124 @@ window.setReviewRating = function(rating) {
   }
 };
 
+// ── LOCAL REVIEWS STORAGE FALLBACKS ──
+let GUEST_REVIEWS_CACHE = {};
+
+function getLocalDefaultReviews(appId) {
+  if (appId !== 'attendease-app') return [];
+  return [
+    {
+      userName: "Mr Asad Pathan",
+      rating: 1,
+      comment: "very bad This is the worst app in the world. This app never works. We have never seen a worse app than this.",
+      timestamp: "2025-08-22T19:23:00.000Z",
+      helpfulCount: 2
+    },
+    {
+      userName: "Arun Kumar",
+      rating: 5,
+      comment: "Excellent app! Face attendance works fast and accurate. Very helpful for payroll management.",
+      timestamp: "2025-08-15T09:30:00.000Z",
+      helpfulCount: 15
+    },
+    {
+      userName: "Sneha Patil",
+      rating: 5,
+      comment: "Highly recommended for site management. Easy tracking and great interface.",
+      timestamp: "2025-08-10T14:20:00.000Z",
+      helpfulCount: 8
+    },
+    {
+      userName: "Rahul Sharma",
+      rating: 5,
+      comment: "Best HR payroll suite I have used. Clean design and dynamic dashboard.",
+      timestamp: "2025-08-05T11:15:00.000Z",
+      helpfulCount: 12
+    },
+    {
+      userName: "John Doe",
+      rating: 5,
+      comment: "Works perfectly on my device. Seamless check-in and checkout system.",
+      timestamp: "2025-07-28T08:45:00.000Z",
+      helpfulCount: 4
+    },
+    {
+      userName: "Meera Nair",
+      rating: 4,
+      comment: "Very useful suite, payroll is dynamic and easy to configure. A few minor lags but overall awesome.",
+      timestamp: "2025-07-20T10:00:00.000Z",
+      helpfulCount: 7
+    },
+    {
+      userName: "Vijay Prasad",
+      rating: 1,
+      comment: "App crashes on launch. Very disappointed, needs immediate fixing.",
+      timestamp: "2025-07-15T15:30:00.000Z",
+      helpfulCount: 9
+    }
+  ];
+}
+
 window.fetchReviews = async function(appId) {
   const listEl = document.getElementById('modal-reviews-list');
   if (!listEl) return;
-  listEl.innerHTML = '<p class="text-xs text-slate-550">Loading reviews...</p>';
+  listEl.innerHTML = '<p class="text-xs text-slate-500">Loading reviews...</p>';
   
   const authMsg = document.getElementById('review-auth-msg');
   const reviewText = document.getElementById('review-text');
-  if (authMsg) authMsg.classList.toggle('hidden', !!currentUser);
+  const usernameInput = document.getElementById('review-username');
+  if (usernameInput) {
+    usernameInput.value = currentUser ? (currentUser.name || '') : '';
+    usernameInput.placeholder = currentUser ? 'Logged in as ' + (currentUser.name || 'User') : 'Your name (optional for guests)...';
+    usernameInput.disabled = !!currentUser;
+  }
   if (reviewText) {
-    reviewText.disabled = !currentUser;
+    reviewText.disabled = false;
     reviewText.value = '';
+  }
+  if (authMsg) {
+    authMsg.classList.add('hidden');
   }
   setReviewRating(0);
 
   try {
     let dbReviews = [];
     if (db) {
-      const snap = await db.collection(`apps/${appId}/reviews`).orderBy('timestamp', 'desc').get();
-      snap.forEach(doc => {
-        dbReviews.push(doc.data());
-      });
+      try {
+        const snap = await db.collection(`apps/${appId}/reviews`).orderBy('timestamp', 'desc').get();
+        snap.forEach(doc => {
+          dbReviews.push(doc.data());
+        });
+      } catch (firestoreError) {
+        console.warn("Firestore reviews failed, loading local seed:", firestoreError);
+      }
     }
 
-    const reviews = dbReviews;
+    // Fallback if empty and appId is attendease-app
+    if (dbReviews.length === 0 && appId === 'attendease-app') {
+      dbReviews = getLocalDefaultReviews(appId);
+    }
+
+    // Merge with GUEST_REVIEWS_CACHE
+    const cached = GUEST_REVIEWS_CACHE[appId] || [];
+    const merged = [...cached];
+    dbReviews.forEach(r => {
+      if (!merged.some(m => m.comment === r.comment && m.userName === r.userName)) {
+        merged.push(r);
+      }
+    });
+
+    // Sort by date desc
+    merged.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Ensure Mr Asad Pathan is ALWAYS first
+    const asadIndex = merged.findIndex(r => r.userName === 'Mr Asad Pathan');
+    if (asadIndex > -1) {
+      const asadReview = merged.splice(asadIndex, 1)[0];
+      merged.unshift(asadReview);
+    }
+
+    const reviews = merged;
 
     let sum = 0, count = 0;
     let distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -1368,7 +1551,7 @@ window.fetchReviews = async function(appId) {
       let replyHTML = '';
       if (r.reply) {
         replyHTML = `
-          <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-3.5 mt-3 border border-slate-150 dark:border-slate-805 text-[10px] space-y-1 ml-4 shadow-xs">
+          <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-3.5 mt-3 border border-slate-200 dark:border-slate-800 text-[10px] space-y-1 ml-4 shadow-xs">
             <div class="flex justify-between items-center text-slate-900 dark:text-white font-bold">
               <span>Developer Response</span>
               <span class="text-slate-400 dark:text-slate-500 font-normal">17/08/23</span>
@@ -1379,7 +1562,7 @@ window.fetchReviews = async function(appId) {
       }
 
       html += `
-        <div class="py-3 border-b border-slate-100 dark:border-slate-850/60 space-y-2">
+        <div class="py-3 border-b border-slate-100 dark:border-slate-800/60 space-y-2">
           <!-- User Profile Row -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -1394,17 +1577,17 @@ window.fetchReviews = async function(appId) {
           </div>
           <!-- Stars & Date Row -->
           <div class="flex items-center gap-2">
-            <div class="flex gap-0.5">${`<i data-lucide="star" class="w-2.5 h-2.5 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400"></i>`.repeat(r.rating) + `<i data-lucide="star" class="w-2.5 h-2.5 text-slate-200 dark:text-slate-750"></i>`.repeat(5 - r.rating)}</div>
-            <span class="text-[9px] text-slate-450 dark:text-slate-500">${formattedDate}</span>
+            <div class="flex gap-0.5">${`<i data-lucide="star" class="w-2.5 h-2.5 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400"></i>`.repeat(r.rating) + `<i data-lucide="star" class="w-2.5 h-2.5 text-slate-200 dark:text-slate-700"></i>`.repeat(5 - r.rating)}</div>
+            <span class="text-[9px] text-slate-500 dark:text-slate-400">${formattedDate}</span>
           </div>
           <!-- Review Comment -->
-          <p class="text-[11px] sm:text-xs text-slate-650 dark:text-slate-350 leading-relaxed">${escapeHtml(r.comment)}</p>
+          <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${escapeHtml(r.comment)}</p>
           <!-- Helpful Buttons Row -->
-          <div class="flex items-center justify-between mt-3 text-[10px] text-slate-450 dark:text-slate-500">
+          <div class="flex items-center justify-between mt-3 text-[10px] text-slate-500 dark:text-slate-400">
             <span>${helpful} ${helpful === 1 ? 'person' : 'people'} found this helpful</span>
             <div class="flex gap-2">
-              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-all select-none">Yes</span>
-              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-all select-none">No</span>
+              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">Yes</span>
+              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">No</span>
             </div>
           </div>
           <!-- Developer Reply -->
@@ -1434,7 +1617,7 @@ window.fetchReviews = async function(appId) {
     if (starsSummary) {
       const roundedRating = Math.round(parseFloat(averageRating));
       starsSummary.innerHTML = `<i data-lucide="star" class="w-3.5 h-3.5 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400"></i>`.repeat(roundedRating) +
-                              `<i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>`.repeat(5 - roundedRating);
+                              `<i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-700"></i>`.repeat(5 - roundedRating);
     }
 
     // Update progress bars
@@ -1455,23 +1638,44 @@ window.fetchReviews = async function(appId) {
 
 window.submitReview = async function() {
   if (!selectedApp) return;
-  if (!currentUser) return alert('You must log in to leave a review.');
   if (currentReviewRating === 0) return alert('Please select a star rating.');
   const text = document.getElementById('review-text').value.trim();
   if (!text) return alert('Please write a short review.');
+
+  const usernameInput = document.getElementById('review-username');
+  const guestName = (usernameInput ? usernameInput.value.trim() : '') || 'HankStudio Guest';
+  const userId = currentUser ? currentUser.uid : 'guest_' + Math.random().toString(36).substring(2, 9);
+  const userName = currentUser ? (currentUser.name || 'Anonymous') : guestName;
+
+  const newReview = {
+    userId: userId,
+    userName: userName,
+    rating: currentReviewRating,
+    comment: text,
+    timestamp: new Date().toISOString(),
+    helpfulCount: 0
+  };
+
+  // Add to local cache first so it is guaranteed to show up instantly on screen
+  if (!GUEST_REVIEWS_CACHE[selectedApp.id]) {
+    GUEST_REVIEWS_CACHE[selectedApp.id] = [];
+  }
+  GUEST_REVIEWS_CACHE[selectedApp.id].unshift(newReview);
 
   const btn = event.target;
   btn.textContent = 'Submitting...';
   btn.disabled = true;
 
   try {
-    await db.collection(`apps/${selectedApp.id}/reviews`).add({
-      userId: currentUser.uid,
-      userName: currentUser.name,
-      rating: currentReviewRating,
-      comment: text,
-      timestamp: new Date().toISOString()
-    });
+    if (db) {
+      await db.collection(`apps/${selectedApp.id}/reviews`).add({
+        userId: userId,
+        userName: userName,
+        rating: currentReviewRating,
+        comment: text,
+        timestamp: new Date().toISOString()
+      });
+    }
     fetchReviews(selectedApp.id);
   } catch (err) {
     alert("Error saving review: " + err.message);
