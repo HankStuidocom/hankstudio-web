@@ -23,26 +23,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase SDK Modules -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDN95soIqy3L9dDyp8K82gWIyUnR95VAcQ",
-      authDomain: "hankstudio-web.firebaseapp.com",
-      projectId: "hankstudio-web",
-      storageBucket: "hankstudio-web.firebasestorage.app",
-      messagingSenderId: "45331467819",
-      appId: "1:45331467819:web:7234241582696fa8aaa46e",
-      measurementId: "G-L21CJ76K0V"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    window.firebaseAuth = getAuth(app);
-    window.firebaseDb = getFirestore(app);
-  </script>
+  <!-- Firebase Initialized inside app.js module -->
 
   <!-- Tailwind Custom Colors Config -->
   <script>
@@ -310,7 +291,7 @@
 </div>
 
 <!-- ══════════════════════════════════════  APP LOGIC INTERFACE  ══════════════════════════════════════ -->
-<script src="app.js" defer></script>
+<script src="app.js" type="module"></script>
 
 </body>
 </html>

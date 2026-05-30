@@ -1,3 +1,40 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDN95soIqy3L9dDyp8K82gWIyUnR95VAcQ",
+  authDomain: "hankstudio-web.firebaseapp.com",
+  projectId: "hankstudio-web",
+  storageBucket: "hankstudio-web.firebasestorage.app",
+  messagingSenderId: "45331467819",
+  appId: "1:45331467819:web:7234241582696fa8aaa46e",
+  measurementId: "G-L21CJ76K0V"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+
+// ── SAFE LOCAL STORAGE WRAPPERS ──
+const safeStorage = {
+  getItem(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn("Storage read blocked:", e);
+      return null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn("Storage write blocked:", e);
+    }
+  }
+};
+
 // ── LOGO SVG (Premium Overlapping Geometrical Ribbon Logo) ──
 const LOGO_SVG = `<svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -48,12 +85,13 @@ let selectedApp = null;
 let isMobileMenuOpen = false;
 let isDeveloperAuthenticated = false;
 let currentGuideText = '';
-let geminiApiKey = localStorage.getItem('gemini_api_key') || '';
+let geminiApiKey = safeStorage.getItem('gemini_api_key') || '';
+let uploadIconData = null;
 
 // ── SAFE LOCAL STORAGE LOADING ──
 let currentUser = null;
 try {
-  const storedUser = localStorage.getItem('hankstudio_current_user');
+  const storedUser = safeStorage.getItem('hankstudio_current_user');
   if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
     currentUser = JSON.parse(storedUser);
   }
@@ -65,7 +103,7 @@ try {
 function toggleDarkMode() {
   document.documentElement.classList.toggle('dark');
   const isDark = document.documentElement.classList.contains('dark');
-  localStorage.setItem('hankstudio_dark_mode', isDark);
+  safeStorage.setItem('hankstudio_dark_mode', isDark);
 }
 
 window.toggleDarkModeAndReRender = function() {
@@ -76,7 +114,7 @@ window.toggleDarkModeAndReRender = function() {
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   // Dark mode init (default true)
-  if (localStorage.getItem('hankstudio_dark_mode') !== 'false') {
+  if (safeStorage.getItem('hankstudio_dark_mode') !== 'false') {
     document.documentElement.classList.add('dark');
   }
 
@@ -90,39 +128,31 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeaderAuth();
 
   // Firebase Auth Listener
-  if (window.firebaseAuth) {
-    import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js").then(({ onAuthStateChanged }) => {
-      onAuthStateChanged(window.firebaseAuth, (user) => {
-        if (user) {
-          currentUser = { 
-            name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
-            email: user.email || '', 
-            uid: user.uid, 
-            photoURL: user.photoURL 
-          };
-        } else {
-          currentUser = null;
-        }
-        localStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
-        updateHeaderAuth();
-        if (activeTab === 'profile') renderContent(); 
-      });
-    });
-  }
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = { 
+        name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
+        email: user.email || '', 
+        uid: user.uid, 
+        photoURL: user.photoURL 
+      };
+    } else {
+      currentUser = null;
+    }
+    safeStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
+    updateHeaderAuth();
+    if (activeTab === 'profile') renderContent(); 
+  });
 
   // Firebase Firestore Listener
-  if (window.firebaseDb) {
-    import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js").then(({ collection, query, orderBy, onSnapshot }) => {
-      const q = query(collection(window.firebaseDb, "apps"), orderBy("uploadedAt", "desc"));
-      onSnapshot(q, (snapshot) => {
-        APPS_DATA = [];
-        snapshot.forEach((doc) => {
-          APPS_DATA.push({ id: doc.id, ...doc.data() });
-        });
-        renderContent();
-      });
+  const q = query(collection(db, "apps"), orderBy("uploadedAt", "desc"));
+  onSnapshot(q, (snapshot) => {
+    APPS_DATA = [];
+    snapshot.forEach((doc) => {
+      APPS_DATA.push({ id: doc.id, ...doc.data() });
     });
-  }
+    renderContent();
+  });
 
   // Hide page loader unconditionally after a small timeout
   setTimeout(() => {
@@ -168,8 +198,7 @@ window.handleLogin = async function() {
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
   try {
-    const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js");
-    await signInWithEmailAndPassword(window.firebaseAuth, email, pw);
+    await signInWithEmailAndPassword(auth, email, pw);
     document.getElementById('auth-success-title').textContent = `Welcome back!`;
     document.getElementById('auth-success-msg').textContent = 'You are now logged in.';
     switchAuthView('success');
@@ -185,9 +214,8 @@ window.handleGoogleLogin = async function() {
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
   try {
-    const { signInWithPopup, GoogleAuthProvider } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js");
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(window.firebaseAuth, provider);
+    const result = await signInWithPopup(auth, provider);
     document.getElementById('auth-success-title').textContent = `Welcome, ${result.user.displayName || 'Developer'}!`;
     document.getElementById('auth-success-msg').textContent = 'You are now logged in.';
     switchAuthView('success');
@@ -214,8 +242,7 @@ window.handleSignup = async function() {
     return;
   }
   try {
-    const { createUserWithEmailAndPassword, updateProfile } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js");
-    const userCredential = await createUserWithEmailAndPassword(window.firebaseAuth, email, pw);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pw);
     await updateProfile(userCredential.user, { displayName: name });
     document.getElementById('auth-success-title').textContent = `Welcome, ${name}!`;
     document.getElementById('auth-success-msg').textContent = 'Your account has been created.';
@@ -230,10 +257,9 @@ window.handleSignup = async function() {
 
 window.logOut = async function() {
   try {
-    const { signOut } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js");
-    await signOut(window.firebaseAuth);
+    await signOut(auth);
     currentUser = null;
-    localStorage.setItem('hankstudio_current_user', 'null');
+    safeStorage.setItem('hankstudio_current_user', 'null');
     updateHeaderAuth();
     setActiveTab('apps');
   } catch (err) {}
@@ -803,8 +829,7 @@ window.handleAppUpload = async function() {
   }
 
   try {
-    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-    await addDoc(collection(window.firebaseDb, "apps"), {
+    await addDoc(collection(db, "apps"), {
       title: name,
       category,
       description: desc,
@@ -844,8 +869,7 @@ window.handleAppUpload = async function() {
 window.deleteApp = async function(id) {
   if (!confirm('Delete this app from the cloud? This cannot be undone.')) return;
   try {
-    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-    await deleteDoc(doc(window.firebaseDb, "apps", id));
+    await deleteDoc(doc(db, "apps", id));
   } catch (err) {
     alert("Error deleting: " + err.message);
   }
@@ -939,8 +963,7 @@ window.fetchReviews = async function(appId) {
   setReviewRating(0);
 
   try {
-    const { collection, query, orderBy, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-    const q = query(collection(window.firebaseDb, `apps/${appId}/reviews`), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, `apps/${appId}/reviews`), orderBy('timestamp', 'desc'));
     const snap = await getDocs(q);
     
     let sum = 0, count = 0;
@@ -984,8 +1007,7 @@ window.submitReview = async function() {
   btn.disabled = true;
 
   try {
-    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-    await addDoc(collection(window.firebaseDb, `apps/${selectedApp.id}/reviews`), {
+    await addDoc(collection(db, `apps/${selectedApp.id}/reviews`), {
       userId: currentUser.uid,
       userName: currentUser.name,
       rating: currentReviewRating,
