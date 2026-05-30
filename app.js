@@ -525,6 +525,189 @@ function renderProfileHTML() {
   </div>`;
 }
 
+// ── DEVELOPER PORTAL PAGE ──
+function renderDeveloperHTML() {
+  if (!isDeveloperAuthenticated) {
+    return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-8">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Developer Portal</h1>
+      <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
+        <i data-lucide="lock" class="w-14 h-14 text-slate-350 dark:text-slate-700 mx-auto mb-4"></i>
+        <h3 class="text-base font-bold text-slate-800 dark:text-white">Developer Access Required</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">Authenticate using your developer credentials to access this portal.</p>
+        <button onclick="openDeveloperModal()" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">Unlock Portal</button>
+      </div>
+    </div>`;
+  }
+
+  // Filter apps created by this developer
+  const myApps = APPS_DATA.filter(a => a.authorUid === (currentUser ? currentUser.uid : 'anonymous'));
+
+  const appsHtml = myApps.length ? `
+    <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+      ${myApps.map(app => `
+        <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xs hover:border-slate-300 dark:hover:border-slate-750 transition-all">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+              ${appCardHTML(app, true)}
+            </div>
+            <div class="min-w-0">
+              <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h4>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(app.category)}</p>
+            </div>
+          </div>
+          <button onclick="deleteApp('${app.id}')" class="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-xl transition-colors border border-red-100/50 dark:border-red-550/20" title="Delete App">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('')}
+    </div>` : `
+    <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
+      <i data-lucide="layout-grid" class="w-10 h-10 text-slate-350 dark:text-slate-700 mx-auto mb-2"></i>
+      <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No Apps Published</p>
+      <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 max-w-[180px] mx-auto">Upload your first app using the form on the left.</p>
+    </div>`;
+
+  return `
+    <div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <i data-lucide="code-2" class="text-brand"></i> Developer Portal
+          </h1>
+          <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Publish premium new software or manage your existing cloud applications.</p>
+        </div>
+        <button onclick="setActiveTab('profile')" class="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand flex items-center gap-1.5 self-start">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Profile
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- UPLOAD FORM (Left side) -->
+        <div class="lg:col-span-7 bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-5">
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
+            <i data-lucide="upload-cloud" class="w-4.5 h-4.5 text-brand"></i> Upload New Application
+          </h2>
+
+          <div id="upload-error" class="hidden bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-550/20 text-red-600 dark:text-red-400 p-3.5 rounded-2xl text-xs font-medium leading-relaxed"></div>
+          <div id="upload-success" class="hidden bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-500/25 text-brand p-3.5 rounded-2xl text-xs font-medium leading-relaxed"></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">App Name *</label>
+              <input id="upload-name" type="text" placeholder="e.g. HankStudio Code Editor"
+                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Category *</label>
+              <select id="upload-category" 
+                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all">
+                <option value="" disabled selected>Select category...</option>
+                <option value="Developer Tools">Developer Tools</option>
+                <option value="Productivity">Productivity</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Multimedia">Multimedia</option>
+                <option value="Security">Security</option>
+                <option value="Games">Games</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Download URL (Direct link) *</label>
+              <input id="upload-link" type="url" placeholder="e.g. https://domain.com/app.exe"
+                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">App Size (optional)</label>
+              <input id="upload-size" type="text" placeholder="e.g. 15.4 MB"
+                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Screenshots (optional, comma-separated image URLs)</label>
+            <input id="upload-screenshots" type="text" placeholder="e.g. https://site.com/img1.png, https://site.com/img2.png"
+              class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+          </div>
+
+          <!-- Icon upload and preview -->
+          <div class="bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+            <div class="relative shrink-0 w-16 h-16 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+              <img id="icon-preview" class="w-full h-full object-cover hidden"/>
+              <i data-lucide="image" id="icon-placeholder-icon" class="w-6 h-6 text-slate-400"></i>
+            </div>
+            <div class="flex-1 w-full space-y-1 text-center sm:text-left">
+              <p class="text-xs font-bold text-slate-900 dark:text-white">App Icon Image *</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Select a premium, high-res PNG/JPG icon.</p>
+              <label class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white px-3.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all shadow-xs">
+                <i data-lucide="file-image" class="w-3.5 h-3.5"></i> Browse Icon...
+                <input id="upload-icon" type="file" accept="image/*" class="hidden" onchange="handleIconSelect(this); document.getElementById('icon-placeholder-icon').classList.add('hidden')"/>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Short Description *</label>
+            <textarea id="upload-desc" rows="3" placeholder="Explain the main features, utility, and user value..."
+              class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
+          </div>
+
+          <div>
+            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Detailed Tech Info & Requirements (optional)</label>
+            <textarea id="upload-info" rows="2" placeholder="e.g. Requires Windows 10/11 x64, 4GB RAM minimum..."
+              class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
+          </div>
+
+          <button onclick="handleAppUpload()"
+            class="w-full py-3 bg-brand hover:bg-brand-hover text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
+            <i data-lucide="upload" class="w-4 h-4"></i> Publish Application
+          </button>
+        </div>
+
+        <!-- APP LIST & STATS (Right side) -->
+        <div class="lg:col-span-5 space-y-6">
+          <!-- Developer Info/Stats Card -->
+          <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-5 h-5 text-brand"></i> Developer Status
+            </h2>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-brand-bg dark:bg-brand-dark/20 text-brand flex items-center justify-center border border-brand/10">
+                <i data-lucide="award" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-slate-900 dark:text-white">Verified Creator</p>
+                <p class="text-[10px] text-slate-550 dark:text-slate-400">HankStudio Registered Developer</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+              <div class="bg-slate-50 dark:bg-[#131314] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Published</p>
+                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">${myApps.length}</p>
+              </div>
+              <div class="bg-slate-50 dark:bg-[#131314] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Points</p>
+                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">380</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Apps Management Card -->
+          <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
+              <i data-lucide="folder-git" class="w-4.5 h-4.5 text-brand"></i> Manage Applications
+            </h2>
+            ${appsHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ── HOME (GAMES) FEED PAGE ──
 function renderHomeHTML() {
   const topTabs = ['For you', 'Top charts', 'Premium', 'Categories'];
