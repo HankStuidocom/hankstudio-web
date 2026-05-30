@@ -43,15 +43,23 @@ const CATEGORIES = [
 ];
 
 // ── STATE ──
-let activeTab = 'apps'; // Apps is now selected by default!
+let activeTab = 'apps'; 
 let selectedApp = null;
 let isMobileMenuOpen = false;
 let isDeveloperAuthenticated = false;
 let currentGuideText = '';
 let geminiApiKey = localStorage.getItem('gemini_api_key') || '';
 
-// ── USERS (persisted locally, synced via Firebase) ──
-let currentUser = JSON.parse(localStorage.getItem('hankstudio_current_user') || 'null');
+// ── SAFE LOCAL STORAGE LOADING ──
+let currentUser = null;
+try {
+  const storedUser = localStorage.getItem('hankstudio_current_user');
+  if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+    currentUser = JSON.parse(storedUser);
+  }
+} catch (e) {
+  console.error("Error parsing current user during app load", e);
+}
 
 // ── DARK MODE PERSISTENCE ──
 function toggleDarkMode() {
@@ -86,13 +94,18 @@ document.addEventListener('DOMContentLoaded', () => {
     import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js").then(({ onAuthStateChanged }) => {
       onAuthStateChanged(window.firebaseAuth, (user) => {
         if (user) {
-          currentUser = { name: user.displayName || user.email.split('@')[0], email: user.email, uid: user.uid, photoURL: user.photoURL };
+          currentUser = { 
+            name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
+            email: user.email || '', 
+            uid: user.uid, 
+            photoURL: user.photoURL 
+          };
         } else {
           currentUser = null;
         }
         localStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
         updateHeaderAuth();
-        if (activeTab === 'profile') renderContent(); // Re-render profile if active
+        if (activeTab === 'profile') renderContent(); 
       });
     });
   }
@@ -111,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Hide page loader
+  // Hide page loader unconditionally after a small timeout
   setTimeout(() => {
     const loader = document.getElementById('page-loader');
     if (loader) {
@@ -230,9 +243,10 @@ function updateHeaderAuth() {
   const area = document.getElementById('header-auth-area');
   if (!area) return;
   if (currentUser) {
+    const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'User');
     const avatarContent = currentUser.photoURL 
       ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover rounded-full">`
-      : `<span class="text-xs font-bold text-white uppercase">${escapeHtml(currentUser.name.charAt(0))}</span>`;
+      : `<span class="text-xs font-bold text-white uppercase">${escapeHtml(displayName.charAt(0))}</span>`;
     
     area.innerHTML = `
       <button onclick="setActiveTab('profile')" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border border-slate-250 dark:border-slate-800 shadow-sm hover:scale-105 transition-transform overflow-hidden" title="View Profile">
@@ -335,12 +349,11 @@ function renderBottomNav() {
   const navContainer = document.querySelector('nav.absolute.bottom-0');
   if (!navContainer) return;
 
-  // Apps, Games, Search, Tools, You aligned perfectly!
   const items = [
     { id: 'apps',    icon: 'layout-grid', label: 'Apps' },
     { id: 'home',    icon: 'gamepad-2',   label: 'Games' },
     { id: 'search',  icon: 'search',      label: 'Search' },
-    { id: 'tools',   icon: 'wrench',      label: 'Tools' }, // Renamed to Tools using wrench icon
+    { id: 'tools',   icon: 'wrench',      label: 'Tools' },
     { id: 'profile', icon: 'user',        label: 'You' }
   ];
 
@@ -416,7 +429,9 @@ function renderProfileHTML() {
   `).join('')}</div>` : `<p class="text-sm text-slate-400 dark:text-slate-500">You haven't uploaded any apps yet.</p>`;
 
   const isDarkModeActive = document.documentElement.classList.contains('dark');
-  
+  const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'User');
+  const initialLetter = displayName.charAt(0).toUpperCase();
+
   // Dynamic settings card for dark mode toggle button
   const toggleCardHtml = `
     <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-5 mt-6 flex items-center justify-between shadow-sm">
@@ -441,11 +456,11 @@ function renderProfileHTML() {
       <div class="w-24 h-24 bg-brand text-white text-4xl font-extrabold flex items-center justify-center rounded-full shadow-lg overflow-hidden border border-brand/20">
         ${currentUser.photoURL 
           ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover">`
-          : currentUser.name.charAt(0).toUpperCase()}
+          : initialLetter}
       </div>
       <div>
-        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">${escapeHtml(currentUser.name)}</h1>
-        <p class="text-slate-500 dark:text-slate-400 font-medium">${escapeHtml(currentUser.email)}</p>
+        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">${escapeHtml(displayName)}</h1>
+        <p class="text-slate-500 dark:text-slate-400 font-medium">${escapeHtml(currentUser.email || 'No email')}</p>
         <div class="mt-3 flex gap-2 items-center">
           ${myApps.length > 0 
             ? `<span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Developer</span>`
@@ -540,7 +555,6 @@ function renderHomeHTML() {
     </div>
   `).join('') : '<p class="text-xs text-slate-500">No games yet.</p>';
 
-  // Re-ordered feed list: "Sponsored • Suggested for You" is first! Filter pills fully deleted.
   return `
     <div class="max-w-2xl mx-auto pb-6">
       <!-- Top Scrollable Tabs -->
@@ -900,10 +914,10 @@ window.setReviewRating = function(rating) {
     const stars = starSelector.children;
     for (let i = 0; i < 5; i++) {
       if (i < rating) {
-        stars[i].classList.replace('text-slate-600', 'text-amber-400');
+        stars[i].classList.replace('text-slate-650', 'text-amber-400');
         stars[i].classList.replace('hover:text-amber-400', 'text-amber-400');
       } else {
-        stars[i].classList.replace('text-amber-400', 'text-slate-600');
+        stars[i].classList.replace('text-amber-400', 'text-slate-650');
         stars[i].classList.replace('text-amber-400', 'hover:text-amber-400');
       }
     }
@@ -913,7 +927,7 @@ window.setReviewRating = function(rating) {
 window.fetchReviews = async function(appId) {
   const listEl = document.getElementById('modal-reviews-list');
   if (!listEl) return;
-  listEl.innerHTML = '<p class="text-xs text-slate-500">Loading reviews...</p>';
+  listEl.innerHTML = '<p class="text-xs text-slate-550">Loading reviews...</p>';
   
   const authMsg = document.getElementById('review-auth-msg');
   const reviewText = document.getElementById('review-text');
@@ -1022,10 +1036,14 @@ async function callGemini(prompt, systemInstruction = '') {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
   const body = { contents: [{ parts: [{ text: prompt }] }] };
   if (systemInstruction) body.system_instruction = { parts: [{ text: systemInstruction }] };
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`Gemini error ${res.status}`);
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
+  try {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`Gemini error ${res.status}`);
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
+  } catch (err) {
+    return mockResponse(prompt);
+  }
 }
 
 function mockResponse(prompt) {
