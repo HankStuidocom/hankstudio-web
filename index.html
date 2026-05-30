@@ -812,7 +812,10 @@
           <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">${escapeHtml(currentUser.name)}</h1>
           <p class="text-slate-500 dark:text-slate-400 font-medium">${escapeHtml(currentUser.email)}</p>
           <div class="mt-3 flex gap-2">
-            <span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Developer</span>
+            ${myApps.length > 0 
+              ? `<span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Developer</span>`
+              : `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Member</span>`
+            }
           </div>
         </div>
       </div>
@@ -957,7 +960,7 @@
           <i data-lucide="download" class="w-3 h-3"></i> View & Download
         </button>
       </div>`).join('') :
-      emptyState('layout-grid','No apps yet','Developers can upload apps via the Developer portal.','Upload an App', 'developer');
+      emptyState('layout-grid','Coming Soon','Check back later for new app releases!');
 
     return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
       <div><h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">All Applications</h1>
@@ -970,7 +973,7 @@
     const apps = APPS_DATA.filter(a => a.category === 'Games');
     if (!apps.length) return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
       <div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">Games</h1></div>
-      ${emptyState('gamepad-2','No games uploaded yet','Developers can upload games via the Developer portal.','Upload a Game','developer')}
+      ${emptyState('gamepad-2','Coming Soon','Check back later for new game releases!')}
     </div>`;
     return renderAppsHTML(a => a.category === 'Games').replace('All Applications','Games');
   }
@@ -979,7 +982,7 @@
     const apps = APPS_DATA.filter(a => a.category === 'Utilities' || a.category === 'Developer Tools');
     if (!apps.length) return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
       <div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">Utility Tools</h1></div>
-      ${emptyState('wrench','No tools uploaded yet','Developers can upload tools via the Developer portal.','Upload a Tool','developer')}
+      ${emptyState('wrench','Coming Soon','Check back later for new tool releases!')}
     </div>`;
     return renderAppsHTML(a => a.category === 'Utilities' || a.category === 'Developer Tools').replace('All Applications','Utility Tools');
   }
