@@ -957,8 +957,6 @@ function renderHomeHTML() {
       <!-- Top Scrollable Tabs -->
       <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#121212] z-30 pt-1">
         ${topTabsHTML}
-      </div>r-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
-        ${topTabsHTML}
       </div>
 
       <!-- Sponsored List (Suggested for You) - Now 1st at the Top! -->
