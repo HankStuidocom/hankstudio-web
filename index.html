@@ -113,6 +113,42 @@
     /* App icon preview */
     #icon-preview { display: none; width: 64px; height: 64px; border-radius: 16px; object-fit: cover; }
     #icon-preview.show { display: block; }
+
+    /* Premium Dark Mode overrides for modals and loader */
+    .dark .dev-modal, .dark .auth-box {
+      background: #1e1e1f !important;
+      color: #f1f5f9 !important;
+      border: 1px solid #2e2e30 !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    }
+    .dark .dev-modal h3, .dark .auth-box h3 {
+      color: #ffffff !important;
+    }
+    .dark .dev-modal p, .dark .auth-box p {
+      color: #94a3b8 !important;
+    }
+    .dark .dev-modal label, .dark .auth-box label {
+      color: #cbd5e1 !important;
+    }
+    .dark .dev-modal input, .dark .auth-box input {
+      background: #2e2e30 !important;
+      border-color: #3e3e42 !important;
+      color: #ffffff !important;
+    }
+    .dark .dev-modal button:first-child, .dark .auth-box button[onclick="closeAuthModal()"] {
+      background: #2e2e30 !important;
+      border-color: #3e3e42 !important;
+      color: #cbd5e1 !important;
+    }
+    .dark #page-loader {
+      background: #131314 !important;
+    }
+    .dark #page-loader p {
+      color: #cbd5e1 !important;
+    }
+    .dark #page-loader p:first-of-type {
+      color: #ffffff !important;
+    }
   </style>
 </head>
 
@@ -250,59 +286,44 @@
   <!-- MOBILE DRAWER REMOVED -->
 
   <!-- MAIN CONTENT (Mobile App Simulator) -->
-  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] sm:h-[800px] w-full sm:max-w-[400px] sm:mx-auto relative overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300 sm:shadow-2xl sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:rounded-[2rem]">
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] sm:h-[800px] w-full sm:max-w-[400px] sm:mx-auto relative overflow-hidden bg-white dark:bg-[#131314] transition-colors duration-300 sm:shadow-2xl sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:rounded-[2rem]">
 
     <!-- HEADER -->
-    <header class="h-16 flex items-center justify-between px-4 lg:px-10 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-950 transition-colors duration-300 gap-3">
+    <header class="h-16 flex items-center justify-between px-4 border-b border-slate-250 dark:border-slate-800 shrink-0 bg-white dark:bg-[#131314] transition-colors duration-300 gap-3">
       <div class="flex items-center gap-3 flex-shrink-0">
         <div class="flex items-center gap-2 cursor-pointer" onclick="setActiveTab('home')">
-          <div id="header-logo-container" class="w-7 h-7 shadow-sm rounded-xl overflow-hidden bg-brand"></div>
-          <span class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">HankStudio</span>
+          <div id="header-logo-container" class="w-8 h-8 shadow-sm rounded-xl overflow-hidden bg-brand"></div>
         </div>
       </div>
 
-      <div class="flex-1 max-w-md md:max-w-xl">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="global-search" oninput="handleSearch(this.value)"
-            placeholder="Search for apps, tools, and more..."
-            class="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-full pl-9 pr-4 py-2 sm:py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"/>
+      <!-- Compact top bar elements (points pill, notifications, profile button) -->
+      <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
+        <!-- Play Points Badge -->
+        <div class="bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full text-xs font-extrabold flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i>
+          <span>57</span>
         </div>
-      </div>
 
-      <div class="flex items-center gap-3 flex-shrink-0">
-        <button onclick="toggleDarkMode()" class="p-2 rounded-full text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <i data-lucide="moon" id="dark-mode-icon" class="w-5 h-5"></i>
+        <!-- Notification Bell -->
+        <div class="relative p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+          <i data-lucide="bell" class="w-4.5 h-4.5"></i>
+          <span class="absolute top-1 right-1 w-3 h-3 bg-red-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center border border-white dark:border-[#131314]">3</span>
+        </div>
+
+        <!-- Dark Mode Toggle -->
+        <button onclick="toggleDarkMode()" class="p-2 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+          <i data-lucide="moon" id="dark-mode-icon" class="w-4.5 h-4.5"></i>
         </button>
-        <div id="header-auth-area" class="flex items-center gap-3"></div>
+
+        <!-- Profile Avatar / Sign-In Button -->
+        <div id="header-auth-area" class="flex items-center gap-1"></div>
       </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-0 pb-20 lg:p-10 lg:pb-10 animate-fade-in-up relative" id="main-content-viewport"></main>
+    <main class="flex-1 overflow-y-auto p-0 pb-20 animate-fade-in-up relative" id="main-content-viewport"></main>
     
     <!-- MOBILE BOTTOM NAV -->
-    <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center h-14 pb-1 z-40 px-2">
-      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="setActiveTab('home')">
-        <i data-lucide="gamepad-2" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Games</span>
-      </div>
-      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-brand" onclick="setActiveTab('apps')">
-        <i data-lucide="layout-grid" class="w-5 h-5 fill-brand/20"></i>
-        <span class="text-[10px] font-bold">Apps</span>
-      </div>
-      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="document.getElementById('global-search').focus()">
-        <i data-lucide="search" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Search</span>
-      </div>
-      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="setActiveTab('tools')">
-        <i data-lucide="book-open" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Books</span>
-      </div>
-      <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500 hover:text-brand" onclick="setActiveTab('profile')">
-        <i data-lucide="user" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">You</span>
-      </div>
-    </nav>
+    <nav class="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#131314] border-t border-slate-200 dark:border-slate-800 flex justify-around items-center h-14 pb-1 z-40 px-2"></nav>
   </div>
 
   <!-- HANK AI CHAT BOX -->
@@ -506,6 +527,7 @@
     });
     renderNavs();
     renderContent();
+    renderBottomNav();
     renderChatMessages();
     document.getElementById('api-key-input').value = geminiApiKey;
     updateGeminiStatusLabel();
@@ -516,7 +538,7 @@
       import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js").then(({ onAuthStateChanged }) => {
         onAuthStateChanged(window.firebaseAuth, (user) => {
           if (user) {
-            currentUser = { name: user.displayName || user.email.split('@')[0], email: user.email, uid: user.uid };
+            currentUser = { name: user.displayName || user.email.split('@')[0], email: user.email, uid: user.uid, photoURL: user.photoURL };
           } else {
             currentUser = null;
           }
@@ -629,17 +651,23 @@
   }
   function updateHeaderAuth() {
     const area = document.getElementById('header-auth-area');
+    if (!area) return;
     if (currentUser) {
+      const avatarContent = currentUser.photoURL 
+        ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover rounded-full">`
+        : `<span class="text-xs font-bold text-white uppercase">${escapeHtml(currentUser.name.charAt(0))}</span>`;
+      
       area.innerHTML = `
-        <span class="text-xs font-bold text-slate-700 hidden md:block">Hi, ${escapeHtml(currentUser.name.split(' ')[0])}</span>
-        <button onclick="logOut()" class="text-xs sm:text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all">
-          Log out
+        <button onclick="setActiveTab('profile')" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border border-slate-250 dark:border-slate-800 shadow-sm hover:scale-105 transition-transform overflow-hidden" title="View Profile">
+          ${avatarContent}
         </button>`;
     } else {
       area.innerHTML = `
-        <button onclick="openAuthModal('login')" class="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-950 hidden md:block">Log in</button>
-        <button onclick="openAuthModal('signup')" class="text-xs sm:text-sm font-extrabold bg-brand hover:bg-brand-hover text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all shadow-sm">Sign up</button>`;
+        <button onclick="openAuthModal('login')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-205 dark:border-slate-700 flex items-center justify-center shadow-sm hover:scale-105 transition-transform" title="Sign In">
+          <i data-lucide="user" class="w-4 h-4"></i>
+        </button>`;
     }
+    if (window.lucide) lucide.createIcons();
   }
 </script>
 
@@ -687,8 +715,9 @@
     activeTab = tabId;
     renderNavs();
     renderContent();
+    renderBottomNav();
     const viewport = document.getElementById('main-content-viewport');
-    viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    if (viewport) viewport.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function renderNavs() {
@@ -719,7 +748,33 @@
 
     renderList('desktop-nav'); renderList('mobile-nav');
     renderBottom('desktop-nav-bottom'); renderBottom('mobile-nav-bottom');
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function renderBottomNav() {
+    const navContainer = document.querySelector('nav.absolute.bottom-0');
+    if (!navContainer) return;
+
+    const items = [
+      { id: 'home',    icon: 'gamepad-2',   label: 'Games' },
+      { id: 'apps',    icon: 'layout-grid', label: 'Apps' },
+      { id: 'search',  icon: 'search',      label: 'Search' },
+      { id: 'tools',   icon: 'book-open',   label: 'Books' },
+      { id: 'profile', icon: 'user',        label: 'You' }
+    ];
+
+    navContainer.innerHTML = items.map(item => {
+      const active = activeTab === item.id;
+      return `
+        <div class="flex flex-col items-center gap-0.5 cursor-pointer flex-1 py-1" onclick="setActiveTab('${item.id}')">
+          <div class="px-5 py-1 rounded-full transition-all duration-300 ${active ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400' : 'bg-transparent text-slate-500 dark:text-slate-400'}">
+            <i data-lucide="${item.icon}" class="w-5 h-5 ${active ? 'fill-blue-600/10' : ''}"></i>
+          </div>
+          <span class="text-[10px] ${active ? 'font-bold text-blue-600 dark:text-blue-400' : 'font-medium text-slate-500 dark:text-slate-400'}">${item.label}</span>
+        </div>`;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
   }
 
   // ── RENDER CONTENT ──
@@ -729,10 +784,10 @@
       home: renderHomeHTML, apps: renderAppsHTML, games: renderGamesHTML,
       tools: renderToolsHTML, 'top-charts': renderTopChartsHTML,
       'new-releases': renderNewReleasesHTML, developer: renderDeveloperHTML,
-      profile: renderProfileHTML
+      profile: renderProfileHTML, search: renderSearchHTML
     };
     vp.innerHTML = (map[activeTab] || renderHomeHTML)();
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 </script>
 
@@ -747,10 +802,10 @@
 
   // ── EMPTY STATE ──
   function emptyState(icon, title, msg, btnLabel, btnTab) {
-    return `<div class="bg-slate-50 border border-dashed border-slate-200 rounded-[2rem] p-12 text-center">
-      <i data-lucide="${icon}" class="w-14 h-14 text-slate-300 mx-auto mb-4"></i>
-      <h3 class="text-base font-bold text-slate-800">${title}</h3>
-      <p class="text-xs text-slate-500 max-w-xs mx-auto mt-2">${msg}</p>
+    return `<div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
+      <i data-lucide="${icon}" class="w-14 h-14 text-slate-300 dark:text-slate-650 mx-auto mb-4"></i>
+      <h3 class="text-base font-bold text-slate-800 dark:text-white">${title}</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">${msg}</p>
       ${btnLabel ? `<button onclick="openDeveloperModal()" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">${btnLabel}</button>` : ''}
     </div>`;
   }
@@ -760,8 +815,8 @@
     if (!currentUser) {
       return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-8">
         <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">My Profile</h1>
-        <div class="bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
-          <i data-lucide="user-x" class="w-14 h-14 text-slate-300 dark:text-slate-700 mx-auto mb-4"></i>
+        <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
+          <i data-lucide="user-x" class="w-14 h-14 text-slate-300 dark:text-slate-750 mx-auto mb-4"></i>
           <h3 class="text-base font-bold text-slate-800 dark:text-white">Not Logged In</h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">You must log in to view your profile.</p>
           <button onclick="openAuthModal('login')" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">Log In</button>
@@ -772,29 +827,34 @@
     const myApps = APPS_DATA.filter(a => a.authorUid === currentUser.uid);
 
     const appsHtml = myApps.length ? `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${myApps.map(app => `
-      <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
+      <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
         <div class="w-16 h-16 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h3>
-          <p class="text-xs text-slate-500">${escapeHtml(app.category)}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(app.category)}</p>
         </div>
       </div>
-    `).join('')}</div>` : `<p class="text-sm text-slate-400">You haven't uploaded any apps yet.</p>`;
+    `).join('')}</div>` : `<p class="text-sm text-slate-400 dark:text-slate-500">You haven't uploaded any apps yet.</p>`;
 
     return `<div class="p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
       <!-- Profile Header -->
-      <div class="flex items-center gap-6 p-6 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2rem]">
-        <div class="w-24 h-24 bg-brand text-white text-4xl font-extrabold flex items-center justify-center rounded-full shadow-lg">
-          ${currentUser.name.charAt(0).toUpperCase()}
+      <div class="flex items-center gap-6 p-6 bg-slate-50 dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem]">
+        <div class="w-24 h-24 bg-brand text-white text-4xl font-extrabold flex items-center justify-center rounded-full shadow-lg overflow-hidden border border-brand/20">
+          ${currentUser.photoURL 
+            ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover">`
+            : currentUser.name.charAt(0).toUpperCase()}
         </div>
         <div>
           <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">${escapeHtml(currentUser.name)}</h1>
           <p class="text-slate-500 dark:text-slate-400 font-medium">${escapeHtml(currentUser.email)}</p>
-          <div class="mt-3 flex gap-2">
+          <div class="mt-3 flex gap-2 items-center">
             ${myApps.length > 0 
               ? `<span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Developer</span>`
               : `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Member</span>`
             }
+            <button onclick="logOut()" class="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-1 rounded-full border border-red-200/50 dark:border-red-500/25 transition-all">
+              Log Out
+            </button>
           </div>
         </div>
       </div>
@@ -888,7 +948,7 @@
     return `
       <div class="max-w-2xl mx-auto pb-6">
         <!-- Top Scrollable Tabs -->
-        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-slate-50 dark:bg-slate-900 z-30 pt-1">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
           ${topTabsHTML}
         </div>
         
@@ -933,22 +993,22 @@
   function renderAppsHTML(filterFn) {
     const apps = filterFn ? APPS_DATA.filter(filterFn) : APPS_DATA;
     const html = apps.length ? apps.map(app => `
-      <div onclick="openAppModal(${app.id})" class="bg-white border border-slate-150 rounded-3xl p-6 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all flex flex-col justify-between h-[300px]">
+      <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 rounded-3xl p-6 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all flex flex-col justify-between h-[300px]">
         <div>
           <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm mb-4">${appCardHTML(app)}</div>
-          <h3 class="font-bold text-slate-900 text-sm mb-1 truncate">${escapeHtml(app.title)}</h3>
+          <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-1 truncate">${escapeHtml(app.title)}</h3>
           <p class="text-xs text-slate-400 mb-2 font-medium">${escapeHtml(app.category)}</p>
-          <p class="text-xs text-slate-500 line-clamp-3 leading-relaxed">${escapeHtml(app.description)}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">${escapeHtml(app.description)}</p>
         </div>
-        <button class="mt-4 w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-brand text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-colors">
+        <button class="mt-4 w-full py-2 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-brand text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-colors">
           <i data-lucide="download" class="w-3 h-3"></i> View & Download
         </button>
       </div>`).join('') :
       emptyState('layout-grid','Coming Soon','Check back later for new app releases!');
 
     return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-      <div><h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">All Applications</h1>
-      <p class="text-slate-500 text-xs sm:text-sm mt-1">Browse and download community-uploaded software.</p></div>
+      <div><h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">All Applications</h1>
+      <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">Browse and download community-uploaded software.</p></div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">${html}</div>
     </div>`;
   }
@@ -956,7 +1016,7 @@
   function renderGamesHTML() {
     const apps = APPS_DATA.filter(a => a.category === 'Games');
     if (!apps.length) return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-      <div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">Games</h1></div>
+      <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Games</h1></div>
       ${emptyState('gamepad-2','Coming Soon','Check back later for new game releases!')}
     </div>`;
     return renderAppsHTML(a => a.category === 'Games').replace('All Applications','Games');
@@ -965,7 +1025,7 @@
   function renderToolsHTML() {
     const apps = APPS_DATA.filter(a => a.category === 'Utilities' || a.category === 'Developer Tools');
     if (!apps.length) return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-      <div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">Utility Tools</h1></div>
+      <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Utility Tools</h1></div>
       ${emptyState('wrench','Coming Soon','Check back later for new tool releases!')}
     </div>`;
     return renderAppsHTML(a => a.category === 'Utilities' || a.category === 'Developer Tools').replace('All Applications','Utility Tools');
@@ -973,19 +1033,19 @@
 
   function renderTopChartsHTML() {
     const html = APPS_DATA.length ? APPS_DATA.map((app, i) => `
-      <div onclick="openAppModal(${app.id})" class="flex items-center gap-4 bg-white border border-slate-150 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
-        <span class="text-xl font-extrabold text-slate-300 w-8 text-center">${i+1}</span>
-        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0">${appCardHTML(app)}</div>
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+        <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
+        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
-          <h3 class="font-bold text-slate-900 truncate text-sm">${escapeHtml(app.title)}</h3>
+          <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
           <p class="text-xs text-slate-400">${escapeHtml(app.category)}</p>
         </div>
-        <button class="bg-brand-bg hover:bg-emerald-100 text-brand px-4 py-2 rounded-xl text-xs font-bold transition-colors">View</button>
+        <button class="bg-brand-bg dark:bg-brand-dark hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-brand px-4 py-2 rounded-xl text-xs font-bold transition-colors">View</button>
       </div>`).join('') :
       emptyState('bar-chart-2','No apps yet','Apps will appear here once uploaded.');
 
     return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-      <div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">Top Charts</h1></div>
+      <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Top Charts</h1></div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${html}</div>
     </div>`;
   }
@@ -993,22 +1053,109 @@
   function renderNewReleasesHTML() {
     const apps = [...APPS_DATA].reverse();
     const html = apps.length ? apps.map(app => `
-      <div onclick="openAppModal(${app.id})" class="flex items-center gap-4 bg-white border border-slate-150 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
-        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0">${appCardHTML(app)}</div>
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
-          <h3 class="font-bold text-slate-900 truncate text-sm">${escapeHtml(app.title)}</h3>
+          <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
           <p class="text-xs text-slate-400">${escapeHtml(app.category)}</p>
-          <p class="text-xs text-slate-500 line-clamp-1 mt-0.5">${escapeHtml(app.description)}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">${escapeHtml(app.description)}</p>
         </div>
-        <span class="text-[10px] font-bold bg-emerald-50 text-brand px-2 py-1 rounded-lg">NEW</span>
+        <span class="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-brand px-2 py-1 rounded-lg">NEW</span>
       </div>`).join('') :
       emptyState('clock','No releases yet','Check back after developers upload apps.');
 
     return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-      <div><h1 class="text-2xl font-bold text-slate-900 tracking-tight">New Releases</h1></div>
+      <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">New Releases</h1></div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${html}</div>
     </div>`;
   }
+
+  // ── SEARCH PAGE ──
+  function renderSearchHTML() {
+    return `
+      <div class="max-w-2xl mx-auto p-4 space-y-6">
+        <!-- Search Input Bar -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="global-search-input" oninput="handleSearchOnPage(this.value)"
+            placeholder="Search for apps, games, tools..."
+            class="w-full bg-slate-100 dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm rounded-full pl-9 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"/>
+        </div>
+
+        <!-- Trending Searches -->
+        <div id="search-suggestions-container" class="space-y-4">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-550 dark:text-slate-400 mb-3">Trending Searches</h2>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('Attendease')">
+              <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i>
+              <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Attendease App</span>
+            </div>
+            <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('game')">
+              <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i>
+              <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Fantasy Games</span>
+            </div>
+            <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('tools')">
+              <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i>
+              <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Developer Tools</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Results Area -->
+        <div id="search-results-area" class="grid grid-cols-1 gap-4 hidden"></div>
+      </div>
+    `;
+  }
+
+  window.triggerSearchText = function(text) {
+    const input = document.getElementById('global-search-input');
+    if (input) {
+      input.value = text;
+      handleSearchOnPage(text);
+    }
+  };
+
+  window.handleSearchOnPage = function(query) {
+    const suggestions = document.getElementById('search-suggestions-container');
+    const resultsArea = document.getElementById('search-results-area');
+    const q = query.toLowerCase().trim();
+
+    if (!q) {
+      if (suggestions) suggestions.classList.remove('hidden');
+      if (resultsArea) resultsArea.classList.add('hidden');
+      return;
+    }
+
+    if (suggestions) suggestions.classList.add('hidden');
+    if (resultsArea) {
+      resultsArea.classList.remove('hidden');
+
+      const filtered = APPS_DATA.filter(a =>
+        a.title.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q)
+      );
+
+      if (filtered.length) {
+        resultsArea.innerHTML = filtered.map(app => `
+          <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md transition-all flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
+            </div>
+            <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
+          </div>`).join('');
+      } else {
+        resultsArea.innerHTML = `
+          <div class="py-16 text-center text-slate-400">
+            <i data-lucide="search-x" class="w-12 h-12 mx-auto mb-3 text-slate-355"></i>
+            <h3 class="font-bold text-slate-500 dark:text-slate-400 text-xs">No results for "${escapeHtml(query)}"</h3>
+          </div>`;
+      }
+    }
+    if (window.lucide) lucide.createIcons();
+  };
 </script>
 
 <script>
