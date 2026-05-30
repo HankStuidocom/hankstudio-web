@@ -484,7 +484,7 @@ function appCardHTML(app, compact = false) {
 
 // ── EMPTY STATE ──
 function emptyState(icon, title, msg, btnLabel, btnTab) {
-  return `<div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
+  return `<div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
     <i data-lucide="${icon}" class="w-14 h-14 text-slate-300 dark:text-slate-650 mx-auto mb-4"></i>
     <h3 class="text-base font-bold text-slate-800 dark:text-white">${title}</h3>
     <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">${msg}</p>
@@ -498,7 +498,7 @@ function renderProfileHTML() {
   
   // Dynamic settings card for dark mode toggle button
   const toggleCardHtml = `
-    <div class="bg-white dark:bg-[#1e1e1f] border border-slate-250 dark:border-slate-800 rounded-[1.5rem] p-5 flex items-center justify-between shadow-sm">
+    <div class="bg-white dark:bg-[#1E1E1E] border border-slate-250 dark:border-slate-800 rounded-[1.5rem] p-5 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-3">
         <div class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
           <i data-lucide="${isDarkModeActive ? 'sun' : 'moon'}" class="w-5 h-5"></i>
@@ -517,8 +517,8 @@ function renderProfileHTML() {
   if (!currentUser) {
     return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-6">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">My Profile</h1>
-      <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center shadow-sm">
-        <i data-lucide="user-x" class="w-14 h-14 text-slate-350 dark:text-slate-700 mx-auto mb-4 animate-pulse"></i>
+      <div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center shadow-sm">
+        <i data-lucide="user-x" class="w-14 h-14 text-slate-355 dark:text-slate-700 mx-auto mb-4 animate-pulse"></i>
         <h3 class="text-base font-bold text-slate-800 dark:text-white">Not Logged In</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">You must log in to view your profile and manage uploaded applications.</p>
         <button onclick="openAuthModal('login')" class="mt-6 bg-brand hover:bg-brand-hover text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-md">Log In</button>
@@ -532,7 +532,7 @@ function renderProfileHTML() {
   const myApps = APPS_DATA.filter(a => a.authorUid === currentUser.uid);
 
   const appsHtml = myApps.length ? `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${myApps.map(app => `
-    <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
+    <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
       <div class="w-16 h-16 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm">${appCardHTML(app)}</div>
       <div class="flex-1 min-w-0">
         <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h3>
@@ -546,7 +546,7 @@ function renderProfileHTML() {
 
   return `<div class="p-6 lg:p-10 max-w-5xl mx-auto space-y-6">
     <!-- Profile Header -->
-    <div class="flex items-center gap-6 p-6 bg-slate-50 dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem]">
+    <div class="flex items-center gap-6 p-6 bg-slate-50 dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem]">
       <div class="w-24 h-24 bg-brand text-white text-4xl font-extrabold flex items-center justify-center rounded-full shadow-lg overflow-hidden border border-brand/20">
         ${currentUser.photoURL 
           ? `<img src="${currentUser.photoURL}" class="w-full h-full object-cover">`
@@ -587,8 +587,8 @@ function renderDeveloperHTML() {
   if (!isDeveloperAuthenticated) {
     return `<div class="p-6 lg:p-10 max-w-4xl mx-auto space-y-8">
       <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Developer Portal</h1>
-      <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
-        <i data-lucide="lock" class="w-14 h-14 text-slate-350 dark:text-slate-700 mx-auto mb-4"></i>
+      <div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center">
+        <i data-lucide="lock" class="w-14 h-14 text-slate-355 dark:text-slate-700 mx-auto mb-4"></i>
         <h3 class="text-base font-bold text-slate-800 dark:text-white">Developer Access Required</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">Authenticate using your developer credentials to access this portal.</p>
         <button onclick="openDeveloperModal()" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">Unlock Portal</button>
@@ -602,7 +602,7 @@ function renderDeveloperHTML() {
   const appsHtml = myApps.length ? `
     <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
       ${myApps.map(app => `
-        <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xs hover:border-slate-300 dark:hover:border-slate-750 transition-all">
+        <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xs hover:border-slate-300 dark:hover:border-slate-750 transition-all">
           <div class="flex items-center gap-3.5 min-w-0">
             <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
               ${appCardHTML(app, true)}
@@ -618,8 +618,8 @@ function renderDeveloperHTML() {
         </div>
       `).join('')}
     </div>` : `
-    <div class="bg-slate-50 dark:bg-[#1e1e1f] border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-      <i data-lucide="layout-grid" class="w-10 h-10 text-slate-350 dark:text-slate-700 mx-auto mb-2"></i>
+    <div class="bg-slate-50 dark:bg-[#1E1E1E] border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
+      <i data-lucide="layout-grid" class="w-10 h-10 text-slate-355 dark:text-slate-700 mx-auto mb-2"></i>
       <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No Apps Published</p>
       <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 max-w-[180px] mx-auto">Upload your first app using the form on the left.</p>
     </div>`;
@@ -640,7 +640,7 @@ function renderDeveloperHTML() {
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- UPLOAD FORM (Left side) -->
-        <div class="lg:col-span-7 bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-5">
+        <div class="lg:col-span-7 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-5">
           <h2 class="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
             <i data-lucide="upload-cloud" class="w-4.5 h-4.5 text-brand"></i> Upload New Application
           </h2>
@@ -652,13 +652,13 @@ function renderDeveloperHTML() {
             <div>
               <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">App Name *</label>
               <input id="upload-name" type="text" placeholder="e.g. HankStudio Code Editor"
-                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+                class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
             </div>
 
             <div>
               <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Category *</label>
               <select id="upload-category" 
-                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all">
+                class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all">
                 <option value="" disabled selected>Select category...</option>
                 <option value="Developer Tools">Developer Tools</option>
                 <option value="Productivity">Productivity</option>
@@ -674,32 +674,32 @@ function renderDeveloperHTML() {
             <div>
               <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Download URL (Direct link) *</label>
               <input id="upload-link" type="url" placeholder="e.g. https://domain.com/app.exe"
-                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+                class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
             </div>
 
             <div>
               <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">App Size (optional)</label>
               <input id="upload-size" type="text" placeholder="e.g. 15.4 MB"
-                class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+                class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
             </div>
           </div>
 
           <div>
             <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Screenshots (optional, comma-separated image URLs)</label>
             <input id="upload-screenshots" type="text" placeholder="e.g. https://site.com/img1.png, https://site.com/img2.png"
-              class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
+              class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all"/>
           </div>
 
           <!-- Icon upload and preview -->
-          <div class="bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+          <div class="bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
             <div class="relative shrink-0 w-16 h-16 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
               <img id="icon-preview" class="w-full h-full object-cover hidden"/>
               <i data-lucide="image" id="icon-placeholder-icon" class="w-6 h-6 text-slate-400"></i>
             </div>
             <div class="flex-1 w-full space-y-1 text-center sm:text-left">
               <p class="text-xs font-bold text-slate-900 dark:text-white">App Icon Image *</p>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Select a premium, high-res PNG/JPG icon.</p>
-              <label class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white px-3.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all shadow-xs">
+              <p class="text-[10px] text-slate-550 dark:text-slate-400 mb-2">Select a premium, high-res PNG/JPG icon.</p>
+              <label class="inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-750 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white px-3.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all shadow-xs">
                 <i data-lucide="file-image" class="w-3.5 h-3.5"></i> Browse Icon...
                 <input id="upload-icon" type="file" accept="image/*" class="hidden" onchange="handleIconSelect(this); document.getElementById('icon-placeholder-icon').classList.add('hidden')"/>
               </label>
@@ -709,13 +709,13 @@ function renderDeveloperHTML() {
           <div>
             <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Short Description *</label>
             <textarea id="upload-desc" rows="3" placeholder="Explain the main features, utility, and user value..."
-              class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
+              class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
           </div>
 
           <div>
             <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Detailed Tech Info & Requirements (optional)</label>
             <textarea id="upload-info" rows="2" placeholder="e.g. Requires Windows 10/11 x64, 4GB RAM minimum..."
-              class="w-full bg-slate-50 dark:bg-[#131314] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
+              class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
           </div>
 
           <button onclick="handleAppUpload()"
@@ -727,7 +727,7 @@ function renderDeveloperHTML() {
         <!-- APP LIST & STATS (Right side) -->
         <div class="lg:col-span-5 space-y-6">
           <!-- Developer Info/Stats Card -->
-          <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
+          <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <i data-lucide="shield-check" class="w-5 h-5 text-brand"></i> Developer Status
             </h2>
@@ -741,11 +741,11 @@ function renderDeveloperHTML() {
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3 pt-2">
-              <div class="bg-slate-50 dark:bg-[#131314] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
+              <div class="bg-slate-50 dark:bg-[#121212] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Published</p>
                 <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">${myApps.length}</p>
               </div>
-              <div class="bg-slate-50 dark:bg-[#131314] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
+              <div class="bg-slate-50 dark:bg-[#121212] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Points</p>
                 <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">380</p>
               </div>
@@ -753,9 +753,14 @@ function renderDeveloperHTML() {
           </div>
 
           <!-- Apps Management Card -->
-          <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
+          <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
               <i data-lucide="folder-git" class="w-4.5 h-4.5 text-brand"></i> Manage Applications
+            </h2>
+            ${appsHtml}
+          </div>
+        </div>
+      </div>-4.5 h-4.5 text-brand"></i> Manage Applications
             </h2>
             ${appsHtml}
           </div>
@@ -785,7 +790,7 @@ function renderHomeHTML() {
   if (activeSubTab === 'top-charts') {
     const games = APPS_DATA.filter(a => a.category === 'Games');
     const html = games.length ? games.map((app, i) => `
-      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
         <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
         <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
@@ -797,7 +802,7 @@ function renderHomeHTML() {
       emptyState('bar-chart-2','No games yet','Games will appear here once uploaded.');
     return `
       <div class="max-w-2xl mx-auto pb-6">
-        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#121212] z-30 pt-1">
           ${topTabsHTML}
         </div>
         <div class="p-4 space-y-4">
@@ -811,7 +816,7 @@ function renderHomeHTML() {
   if (activeSubTab === 'premium') {
     const games = APPS_DATA.filter(a => a.category === 'Games');
     const html = games.length ? games.map(app => `
-      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+      <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
         <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
           <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
@@ -825,7 +830,7 @@ function renderHomeHTML() {
       emptyState('award','No premium games yet','Premium selections will appear here.');
     return `
       <div class="max-w-2xl mx-auto pb-6">
-        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#121212] z-30 pt-1">
           ${topTabsHTML}
         </div>
         <div class="p-4 space-y-4">
@@ -840,7 +845,7 @@ function renderHomeHTML() {
     const html = CATEGORIES.map(cat => {
       const count = APPS_DATA.filter(a => a.category === cat.id).length;
       return `
-        <div onclick="searchCategory('${cat.id}')" class="bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 rounded-3xl p-5 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between h-[120px] group">
+        <div onclick="searchCategory('${cat.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 rounded-3xl p-5 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between h-[120px] group">
           <div class="flex items-center justify-between">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center ${cat.classes ? cat.classes : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'}">
               <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
@@ -855,7 +860,7 @@ function renderHomeHTML() {
     }).join('');
     return `
       <div class="max-w-2xl mx-auto pb-6">
-        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+        <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#121212] z-30 pt-1">
           ${topTabsHTML}
         </div>
         <div class="p-4 space-y-4">
@@ -871,7 +876,7 @@ function renderHomeHTML() {
   if (featuredApp) {
     const isAttendEase = featuredApp.title === 'AttendEase';
     bannerHTML = `
-      <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-sm w-full group transition-all duration-300 hover:shadow-md">
+      <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-sm w-full group transition-all duration-300 hover:shadow-md">
         <!-- Card Banner Cover Image -->
         <div class="relative w-full h-[160px] sm:h-[200px] overflow-hidden cursor-pointer" onclick="openAppModal('${featuredApp.id}')">
           <span class="absolute top-3 left-3 bg-white/90 dark:bg-black/80 text-slate-900 dark:text-white text-[9px] font-bold px-2.5 py-1 rounded-md z-10 shadow-sm">Coming soon</span>
@@ -881,14 +886,14 @@ function renderHomeHTML() {
           }
         </div>
         <!-- Card App Info Row (Google Play Store Style Layout) -->
-        <div class="p-4 flex items-center justify-between gap-3 bg-white dark:bg-[#1e1e1f] border-t border-slate-100 dark:border-slate-800/50">
+        <div class="p-4 flex items-center justify-between gap-3 bg-white dark:bg-[#1E1E1E] border-t border-slate-100 dark:border-slate-800/50">
           <div class="flex items-center gap-3.5 min-w-0 cursor-pointer flex-1" onclick="openAppModal('${featuredApp.id}')">
             <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden shadow-sm border border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-805">
               ${appCardHTML(featuredApp, true)}
             </div>
             <div class="min-w-0">
               <h3 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white truncate">${escapeHtml(featuredApp.title)}</h3>
-              <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(featuredApp.authorName)}</p>
+              <p class="text-[10px] sm:text-xs text-slate-550 dark:text-slate-400 truncate mt-0.5">${escapeHtml(featuredApp.authorName)}</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <span class="text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">12+</span>
                 <span class="text-[9px] text-slate-450 dark:text-slate-500">Rated for 12+</span>
@@ -896,10 +901,10 @@ function renderHomeHTML() {
             </div>
           </div>
           <div class="flex flex-col items-center flex-shrink-0">
-            <button onclick="openAppModal('${featuredApp.id}')" class="bg-[#c2e7ff] dark:bg-[#004b73] hover:bg-[#b2e0ff] dark:hover:bg-[#005c8a] text-[#001d35] dark:text-[#c2e7ff] px-6 py-2.5 rounded-full font-extrabold text-[12px] shadow-sm transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 duration-200">
+            <button onclick="openAppModal('${featuredApp.id}')" class="bg-[#c2e7ff] dark:bg-[#B8CCF6] hover:bg-[#b2e0ff] dark:hover:bg-[#a5bceb] text-[#001d35] dark:text-[#243B63] px-6 py-2.5 rounded-full font-extrabold text-[12px] shadow-sm transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 duration-200">
               Install
             </button>
-            <span class="text-[8px] text-slate-400 dark:text-slate-500 mt-1 block">In-app purchases</span>
+            <span class="text-[8px] text-slate-450 dark:text-slate-500 mt-1 block">In-app purchases</span>
           </div>
         </div>
       </div>
@@ -950,7 +955,9 @@ function renderHomeHTML() {
   return `
     <div class="max-w-2xl mx-auto pb-6">
       <!-- Top Scrollable Tabs -->
-      <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
+      <div class="flex overflow-x-auto hide-scrollbar border-b border-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#121212] z-30 pt-1">
+        ${topTabsHTML}
+      </div>r-slate-200 dark:border-slate-800/50 -mx-4 px-4 sm:mx-0 sm:px-0 sticky top-0 bg-white dark:bg-[#131314] z-30 pt-1">
         ${topTabsHTML}
       </div>
 
@@ -990,30 +997,27 @@ function renderHomeHTML() {
 function renderAppsHTML(filterFn) {
   const apps = filterFn ? APPS_DATA.filter(filterFn) : APPS_DATA;
   const html = apps.length ? apps.map(app => `
-    <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 rounded-3xl p-6 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all flex flex-col justify-between h-[300px]">
-      <div>
-        <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm mb-4">${appCardHTML(app)}</div>
-        <h3 class="font-bold text-slate-900 dark:text-white text-sm mb-1 truncate">${escapeHtml(app.title)}</h3>
-        <p class="text-xs text-slate-400 mb-2 font-medium">${escapeHtml(app.category)}</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">${escapeHtml(app.description)}</p>
+    <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+      <div class="flex-1 min-w-0">
+        <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
       </div>
-      <button class="mt-4 w-full py-2 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-brand text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-colors">
-        <i data-lucide="download" class="w-3 h-3"></i> View & Download
-      </button>
+      <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
     </div>`).join('') :
     emptyState('layout-grid','Coming Soon','Check back later for new app releases!');
 
-  return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-    <div><h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">All Applications</h1>
-    <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">Browse and download community-uploaded software.</p></div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">${html}</div>
+  return `<div class="max-w-2xl mx-auto p-4 space-y-6">
+    <div><h1 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">All Applications</h1>
+    <p class="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs mt-1">Browse and download community-uploaded software.</p></div>
+    <div class="grid grid-cols-1 gap-4">${html}</div>
   </div>`;
 }
 
 function renderGamesHTML() {
   const apps = APPS_DATA.filter(a => a.category === 'Games');
-  if (!apps.length) return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-    <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Games</h1></div>
+  if (!apps.length) return `<div class="max-w-2xl mx-auto p-4 space-y-6">
+    <div><h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Games</h1></div>
     ${emptyState('gamepad-2','Coming Soon','Check back later for new game releases!')}
   </div>`;
   return renderAppsHTML(a => a.category === 'Games').replace('All Applications','Games');
@@ -1021,8 +1025,8 @@ function renderGamesHTML() {
 
 function renderToolsHTML() {
   const apps = APPS_DATA.filter(a => a.category === 'Utilities' || a.category === 'Developer Tools');
-  if (!apps.length) return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-    <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Utility Tools</h1></div>
+  if (!apps.length) return `<div class="max-w-2xl mx-auto p-4 space-y-6">
+    <div><h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Utility Tools</h1></div>
     ${emptyState('wrench','Coming Soon','Check back later for new tool releases!')}
   </div>`;
   return renderAppsHTML(a => a.category === 'Utilities' || a.category === 'Developer Tools').replace('All Applications','Utility Tools');
@@ -1030,40 +1034,39 @@ function renderToolsHTML() {
 
 function renderTopChartsHTML() {
   const html = APPS_DATA.length ? APPS_DATA.map((app, i) => `
-    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
       <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
-      <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
       <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
-        <p class="text-xs text-slate-400">${escapeHtml(app.category)}</p>
+        <h3 class="font-bold text-slate-900 dark:text-white truncate text-xs">${escapeHtml(app.title)}</h3>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
       </div>
-      <button class="bg-brand-bg dark:bg-brand-dark hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-brand px-4 py-2 rounded-xl text-xs font-bold transition-colors">View</button>
+      <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
     </div>`).join('') :
     emptyState('bar-chart-2','No apps yet','Apps will appear here once uploaded.');
 
-  return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-    <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Top Charts</h1></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${html}</div>
+  return `<div class="max-w-2xl mx-auto p-4 space-y-6">
+    <div><h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Top Charts</h1></div>
+    <div class="grid grid-cols-1 gap-4">${html}</div>
   </div>`;
 }
 
 function renderNewReleasesHTML() {
   const apps = [...APPS_DATA].reverse();
   const html = apps.length ? apps.map(app => `
-    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1e1e1f] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
-      <div class="w-14 h-14 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800">${appCardHTML(app)}</div>
+    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-150 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-150 dark:bg-slate-800">${appCardHTML(app, true)}</div>
       <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-slate-900 dark:text-white truncate text-sm">${escapeHtml(app.title)}</h3>
-        <p class="text-xs text-slate-400">${escapeHtml(app.category)}</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">${escapeHtml(app.description)}</p>
+        <h3 class="font-bold text-slate-900 dark:text-white truncate text-xs">${escapeHtml(app.title)}</h3>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
       </div>
       <span class="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-brand px-2 py-1 rounded-lg">NEW</span>
     </div>`).join('') :
     emptyState('clock','No releases yet','Check back after developers upload apps.');
 
-  return `<div class="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-    <div><h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">New Releases</h1></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${html}</div>
+  return `<div class="max-w-2xl mx-auto p-4 space-y-6">
+    <div><h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Releases</h1></div>
+    <div class="grid grid-cols-1 gap-4">${html}</div>
   </div>`;
 }
 
@@ -1296,8 +1299,6 @@ window.openAppModal = async function(appId) {
   // Reset modal scroll position
   const scrollContainer = document.getElementById('modal-content-scroll');
   if (scrollContainer) scrollContainer.scrollTop = 0;
-
-  loadAIGuide(app);
 };
 
 window.closeAppModal = function() {
@@ -1340,34 +1341,6 @@ window.fetchReviews = async function(appId) {
   }
   setReviewRating(0);
 
-  // Play Store seeded reviews fallback (highly detailed, matches screenshot 1!)
-  const seedReviews = [
-    {
-      userName: 'Spandan Behera',
-      rating: 5,
-      comment: 'It is an all-in-one app designed to make student life easier which is developed by students of ITER College. With AttendEase, check-in tracking is extremely smooth!',
-      timestamp: '2023-04-08T12:00:00.000Z',
-      helpfulCount: 8,
-      reply: 'Hi, thank you very much for your feedback! We are proud to support student check-in management.'
-    },
-    {
-      userName: 'Anshuman Panda',
-      rating: 5,
-      comment: 'One and Only App For Iter Students . Best Experience On App . Interface and offline loading is top-notch.',
-      timestamp: '2023-08-04T14:30:00.000Z',
-      helpfulCount: 1,
-      reply: 'Thank you very much for your rating. We are committed to maintaining a reliable platform!'
-    },
-    {
-      userName: 'Siddharth Dash',
-      rating: 1,
-      comment: 'One of the worst app ever , especially after the update. Login credentials are not being processed, the permissions box keeps appearing.',
-      timestamp: '2023-12-21T10:00:00.000Z',
-      helpfulCount: 14,
-      reply: 'We are sorry to hear this. Please ensure you clear cache and grant necessary storage permissions, or contact support at team@hankstudio.app.'
-    }
-  ];
-
   try {
     let dbReviews = [];
     if (db) {
@@ -1377,16 +1350,18 @@ window.fetchReviews = async function(appId) {
       });
     }
 
-    const reviews = (appId === 'attendease-app' || dbReviews.length === 0)
-      ? [...dbReviews, ...seedReviews]
-      : dbReviews;
+    const reviews = dbReviews;
 
     let sum = 0, count = 0;
+    let distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     let html = '';
     
     reviews.forEach(r => {
       sum += r.rating;
       count++;
+      if (distribution[r.rating] !== undefined) {
+        distribution[r.rating]++;
+      }
 
       const initial = r.userName ? r.userName.charAt(0).toUpperCase() : 'U';
       const formattedDate = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-GB') : '08/04/23';
@@ -1440,20 +1415,39 @@ window.fetchReviews = async function(appId) {
       `;
     });
 
+    let averageRating = '0.0';
     if (count > 0) {
+      averageRating = (sum / count).toFixed(1);
       listEl.innerHTML = html;
-      const averageRating = (sum / count).toFixed(1);
       document.getElementById('modal-app-rating').textContent = averageRating;
       document.getElementById('modal-rating-huge').textContent = averageRating;
       document.getElementById('modal-review-count-total').textContent = count;
       document.getElementById('modal-stat-rating-count').textContent = `${count} reviews`;
     } else {
-      listEl.innerHTML = '<p class="text-xs text-slate-500">No reviews yet. Be the first!</p>';
-      document.getElementById('modal-app-rating').textContent = '5.0';
-      document.getElementById('modal-rating-huge').textContent = '5.0';
+      listEl.innerHTML = '<p class="text-xs text-slate-550">No reviews yet. Be the first!</p>';
+      document.getElementById('modal-app-rating').textContent = '0.0';
+      document.getElementById('modal-rating-huge').textContent = '0.0';
       document.getElementById('modal-review-count-total').textContent = '0';
       document.getElementById('modal-stat-rating-count').textContent = `0 reviews`;
     }
+
+    // Dynamic Stars Summary
+    const starsSummary = document.getElementById('modal-reviews-stars-summary');
+    if (starsSummary) {
+      const roundedRating = Math.round(parseFloat(averageRating));
+      starsSummary.innerHTML = `<i data-lucide="star" class="w-3.5 h-3.5 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400"></i>`.repeat(roundedRating) +
+                              `<i data-lucide="star" class="w-3.5 h-3.5 text-slate-200 dark:text-slate-750"></i>`.repeat(5 - roundedRating);
+    }
+
+    // Update progress bars
+    for (let ratingVal = 1; ratingVal <= 5; ratingVal++) {
+      const barEl = document.getElementById(`bar-${ratingVal}`);
+      if (barEl) {
+        const percent = count > 0 ? (distribution[ratingVal] / count) * 100 : 0;
+        barEl.style.width = `${percent}%`;
+      }
+    }
+
     if (window.lucide) lucide.createIcons();
   } catch (err) {
     listEl.innerHTML = '<p class="text-xs text-red-500">Failed to load reviews.</p>';
@@ -1489,54 +1483,7 @@ window.submitReview = async function() {
   }
 };
 
-window.loadAIGuide = async function(app) {
-  const box = document.getElementById('modal-guide-content');
-  if (!box) return;
-  box.innerHTML = `<div class="flex items-center gap-2 text-slate-400 text-xs animate-pulse"><i data-lucide="loader" class="w-4 h-4 animate-spin text-brand"></i> Generating AI guide for ${escapeHtml(app.title)}...</div>`;
-  if (window.lucide) lucide.createIcons();
-  const prompt = `Write a quick-start guide for the app "${app.title}" (${app.category}). Include 3 key tips and what makes it useful. Description: ${app.description}`;
-  try {
-    const result = await callGemini(prompt, 'You are a helpful software assistant. Write short, practical quick-start guides.');
-    currentGuideText = result;
-    box.innerHTML = formatText(result);
-  } catch (e) {
-    box.innerHTML = `<p class="text-slate-400 text-xs">AI guide unavailable. Add a Gemini API key in the chat settings to enable AI features.</p>`;
-  }
-};
 
-window.regenerateGuide = function() {
-  if (selectedApp) loadAIGuide(selectedApp);
-};
-
-function formatText(text) {
-  return text.split('\n').map(line => {
-    const t = line.trim();
-    if (t.startsWith('###')) return `<h4 class="text-sm font-bold text-brand mt-3 mb-1">${t.replace('###','').trim()}</h4>`;
-    if (t.startsWith('##')) return `<h3 class="text-sm font-bold text-white mt-4 mb-1.5 border-b border-slate-800 pb-1">${t.replace('##','').trim()}</h3>`;
-    if (t.startsWith('#')) return `<h2 class="text-base font-bold text-white mt-5 mb-2">${t.replace('#','').trim()}</h2>`;
-    if (t.startsWith('-') || t.startsWith('*')) return `<li class="ml-4 list-disc mb-1 text-slate-400 text-xs">${t.replace(/^[-*]\s*/,'').replace(/\*\*(.*?)\*\*/g,'<strong class="text-white">$1</strong>')}</li>`;
-    return t ? `<p class="mb-1.5 text-slate-300 text-xs leading-relaxed">${t.replace(/\*\*(.*?)\*\*/g,'<strong class="text-white font-bold">$1</strong>')}</p>` : '';
-  }).join('');
-}
-
-async function callGemini(prompt, systemInstruction = '') {
-  if (!geminiApiKey) return mockResponse(prompt);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-  const body = { contents: [{ parts: [{ text: prompt }] }] };
-  if (systemInstruction) body.system_instruction = { parts: [{ text: systemInstruction }] };
-  try {
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error(`Gemini error ${res.status}`);
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
-  } catch (err) {
-    return mockResponse(prompt);
-  }
-}
-
-function mockResponse(prompt) {
-  return Promise.resolve(`**Mock Response**\n\nTo enable real AI responses, click the ⚙ settings icon above and paste your free Gemini API key from [aistudio.google.com](https://aistudio.google.com/app/apikey).\n\nYour question: *${prompt.slice(0, 60)}...*`);
-}
 
 function escapeHtml(str) {
   if (!str) return '';
