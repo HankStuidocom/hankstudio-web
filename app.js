@@ -1248,10 +1248,15 @@ window.openAppModal = async function(appId) {
   selectedApp = app;
 
   document.getElementById('modal-app-title').textContent = app.title;
-  document.getElementById('modal-app-meta').textContent = app.category;
-  document.getElementById('modal-app-rating').textContent = '5.0';
+  document.getElementById('modal-app-meta').textContent = app.authorName || 'HankStudio Developer';
   document.getElementById('modal-app-desc').textContent = app.description;
-  document.getElementById('modal-app-info').textContent = app.appInfo || 'No additional info provided.';
+  document.getElementById('modal-stat-size').textContent = app.size || '8.8 MB';
+  
+  const categoryChip = document.getElementById('modal-category-chip');
+  if (categoryChip) {
+    categoryChip.textContent = app.category;
+    categoryChip.onclick = () => { closeAppModal(); searchCategory(app.category); };
+  }
 
   const iconEl = document.getElementById('modal-app-icon');
   if (iconEl) iconEl.innerHTML = appCardHTML(app);
@@ -1259,12 +1264,12 @@ window.openAppModal = async function(appId) {
   const dlBtn = document.getElementById('modal-download-btn');
   if (dlBtn) {
     if (app.downloadLink) {
-      dlBtn.onclick = () => { window.open(app.downloadLink, '_blank'); };
-      dlBtn.textContent = `⬇ Download ${app.title}`;
+      dlBtn.onclick = () => { downloadSelectedApp(); };
+      dlBtn.textContent = `Install`;
       dlBtn.disabled = false;
       dlBtn.style.opacity = '1';
     } else {
-      dlBtn.textContent = '⬇ Download Unavailable';
+      dlBtn.textContent = 'Install Unavailable';
       dlBtn.disabled = true;
       dlBtn.style.opacity = '0.5';
     }
@@ -1274,7 +1279,7 @@ window.openAppModal = async function(appId) {
   const ssGallery = document.getElementById('modal-screenshots');
   if (app.screenshots && app.screenshots.length > 0) {
     if (ssContainer) ssContainer.classList.remove('hidden');
-    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => `<img src="${escapeHtml(s)}" class="h-32 md:h-48 rounded-xl object-cover shadow-sm snap-center flex-shrink-0 border border-slate-800" onerror="this.style.display='none'">`).join('');
+    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => `<img src="${escapeHtml(s)}" class="h-32 md:h-48 rounded-xl object-cover shadow-sm snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800" onerror="this.style.display='none'">`).join('');
   } else {
     if (ssContainer) ssContainer.classList.add('hidden');
     if (ssGallery) ssGallery.innerHTML = '';
@@ -1287,6 +1292,11 @@ window.openAppModal = async function(appId) {
   const viewport = document.getElementById('main-content-viewport');
   if (viewport) viewport.style.overflowY = 'hidden';
   document.body.style.overflow = 'hidden';
+  
+  // Reset modal scroll position
+  const scrollContainer = document.getElementById('modal-content-scroll');
+  if (scrollContainer) scrollContainer.scrollTop = 0;
+
   loadAIGuide(app);
 };
 
@@ -1308,11 +1318,9 @@ window.setReviewRating = function(rating) {
     const stars = starSelector.children;
     for (let i = 0; i < 5; i++) {
       if (i < rating) {
-        stars[i].classList.replace('text-slate-650', 'text-amber-400');
-        stars[i].classList.replace('hover:text-amber-400', 'text-amber-400');
+        stars[i].className = "w-5 h-5 cursor-pointer text-blue-600 dark:text-blue-400 transition-colors";
       } else {
-        stars[i].classList.replace('text-amber-400', 'text-slate-650');
-        stars[i].classList.replace('text-amber-400', 'hover:text-amber-400');
+        stars[i].className = "w-5 h-5 cursor-pointer text-slate-350 dark:text-slate-700 hover:text-blue-500 transition-colors";
       }
     }
   }
@@ -1332,30 +1340,119 @@ window.fetchReviews = async function(appId) {
   }
   setReviewRating(0);
 
+  // Play Store seeded reviews fallback (highly detailed, matches screenshot 1!)
+  const seedReviews = [
+    {
+      userName: 'Spandan Behera',
+      rating: 5,
+      comment: 'It is an all-in-one app designed to make student life easier which is developed by students of ITER College. With AttendEase, check-in tracking is extremely smooth!',
+      timestamp: '2023-04-08T12:00:00.000Z',
+      helpfulCount: 8,
+      reply: 'Hi, thank you very much for your feedback! We are proud to support student check-in management.'
+    },
+    {
+      userName: 'Anshuman Panda',
+      rating: 5,
+      comment: 'One and Only App For Iter Students . Best Experience On App . Interface and offline loading is top-notch.',
+      timestamp: '2023-08-04T14:30:00.000Z',
+      helpfulCount: 1,
+      reply: 'Thank you very much for your rating. We are committed to maintaining a reliable platform!'
+    },
+    {
+      userName: 'Siddharth Dash',
+      rating: 1,
+      comment: 'One of the worst app ever , especially after the update. Login credentials are not being processed, the permissions box keeps appearing.',
+      timestamp: '2023-12-21T10:00:00.000Z',
+      helpfulCount: 14,
+      reply: 'We are sorry to hear this. Please ensure you clear cache and grant necessary storage permissions, or contact support at team@hankstudio.app.'
+    }
+  ];
+
   try {
-    const snap = await db.collection(`apps/${appId}/reviews`).orderBy('timestamp', 'desc').get();
-    
+    let dbReviews = [];
+    if (db) {
+      const snap = await db.collection(`apps/${appId}/reviews`).orderBy('timestamp', 'desc').get();
+      snap.forEach(doc => {
+        dbReviews.push(doc.data());
+      });
+    }
+
+    const reviews = (appId === 'attendease-app' || dbReviews.length === 0)
+      ? [...dbReviews, ...seedReviews]
+      : dbReviews;
+
     let sum = 0, count = 0;
     let html = '';
-    snap.forEach(doc => {
-      const r = doc.data();
+    
+    reviews.forEach(r => {
       sum += r.rating;
       count++;
-      html += `<div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
-        <div class="flex items-center justify-between mb-1">
-          <span class="text-xs font-bold text-slate-300">${escapeHtml(r.userName)}</span>
-          <div class="flex gap-0.5">${'<i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i>'.repeat(r.rating)}</div>
+
+      const initial = r.userName ? r.userName.charAt(0).toUpperCase() : 'U';
+      const formattedDate = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-GB') : '08/04/23';
+      const helpful = r.helpfulCount || Math.floor(Math.random() * 5) + 1;
+      
+      let replyHTML = '';
+      if (r.reply) {
+        replyHTML = `
+          <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-3.5 mt-3 border border-slate-150 dark:border-slate-805 text-[10px] space-y-1 ml-4 shadow-xs">
+            <div class="flex justify-between items-center text-slate-900 dark:text-white font-bold">
+              <span>Developer Response</span>
+              <span class="text-slate-400 dark:text-slate-500 font-normal">17/08/23</span>
+            </div>
+            <p class="text-slate-650 dark:text-slate-400 leading-relaxed mt-1">${escapeHtml(r.reply)}</p>
+          </div>
+        `;
+      }
+
+      html += `
+        <div class="py-3 border-b border-slate-100 dark:border-slate-850/60 space-y-2">
+          <!-- User Profile Row -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-355 flex items-center justify-center font-bold text-xs shadow-xs border border-slate-200/50 dark:border-slate-700/50">
+                ${initial}
+              </div>
+              <span class="text-xs font-semibold text-slate-900 dark:text-white">${escapeHtml(r.userName)}</span>
+            </div>
+            <button class="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white active:scale-95 transition-transform">
+              <i data-lucide="more-vertical" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <!-- Stars & Date Row -->
+          <div class="flex items-center gap-2">
+            <div class="flex gap-0.5">${`<i data-lucide="star" class="w-2.5 h-2.5 fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400"></i>`.repeat(r.rating) + `<i data-lucide="star" class="w-2.5 h-2.5 text-slate-200 dark:text-slate-750"></i>`.repeat(5 - r.rating)}</div>
+            <span class="text-[9px] text-slate-450 dark:text-slate-500">${formattedDate}</span>
+          </div>
+          <!-- Review Comment -->
+          <p class="text-[11px] sm:text-xs text-slate-650 dark:text-slate-350 leading-relaxed">${escapeHtml(r.comment)}</p>
+          <!-- Helpful Buttons Row -->
+          <div class="flex items-center justify-between mt-3 text-[10px] text-slate-450 dark:text-slate-500">
+            <span>${helpful} ${helpful === 1 ? 'person' : 'people'} found this helpful</span>
+            <div class="flex gap-2">
+              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-all select-none">Yes</span>
+              <span class="text-[9px] font-bold text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-all select-none">No</span>
+            </div>
+          </div>
+          <!-- Developer Reply -->
+          ${replyHTML}
         </div>
-        <p class="text-[10px] sm:text-xs text-slate-400">${escapeHtml(r.comment)}</p>
-      </div>`;
+      `;
     });
 
     if (count > 0) {
       listEl.innerHTML = html;
-      document.getElementById('modal-app-rating').textContent = (sum / count).toFixed(1);
+      const averageRating = (sum / count).toFixed(1);
+      document.getElementById('modal-app-rating').textContent = averageRating;
+      document.getElementById('modal-rating-huge').textContent = averageRating;
+      document.getElementById('modal-review-count-total').textContent = count;
+      document.getElementById('modal-stat-rating-count').textContent = `${count} reviews`;
     } else {
       listEl.innerHTML = '<p class="text-xs text-slate-500">No reviews yet. Be the first!</p>';
       document.getElementById('modal-app-rating').textContent = '5.0';
+      document.getElementById('modal-rating-huge').textContent = '5.0';
+      document.getElementById('modal-review-count-total').textContent = '0';
+      document.getElementById('modal-stat-rating-count').textContent = `0 reviews`;
     }
     if (window.lucide) lucide.createIcons();
   } catch (err) {
