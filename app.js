@@ -69,6 +69,7 @@ const ATTENDEASE_APP = {
   appInfo: 'Version: 1.0.0\nSize: 8.8 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: HankStudio',
   size: '8.8 MB',
   iconDataUrl: 'downloads/attendease_logo.png',
+  bannerDataUrl: 'downloads/attendease_banner.png',
   downloadLink: 'downloads/AttendEase.apk',
   screenshots: [],
   authorUid: 'hankstudio-developer',
@@ -868,28 +869,37 @@ function renderHomeHTML() {
   const featuredApp = APPS_DATA.find(a => a.category === 'Games') || APPS_DATA[0];
   let bannerHTML = '';
   if (featuredApp) {
+    const isAttendEase = featuredApp.title === 'AttendEase';
     bannerHTML = `
-      <div class="relative w-full h-[280px] sm:h-[340px] rounded-[1.5rem] overflow-hidden cursor-pointer group shadow-sm border border-slate-200 dark:border-slate-800" onclick="openAppModal('${featuredApp.id}')">
-        <div class="absolute inset-0 bg-slate-900">
-          ${featuredApp.iconDataUrl ? `<img src="${featuredApp.iconDataUrl}" class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700">` : ''}
+      <div class="bg-white dark:bg-[#1e1e1f] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-sm w-full group transition-all duration-300 hover:shadow-md">
+        <!-- Card Banner Cover Image -->
+        <div class="relative w-full h-[160px] sm:h-[200px] overflow-hidden cursor-pointer" onclick="openAppModal('${featuredApp.id}')">
+          <span class="absolute top-3 left-3 bg-white/90 dark:bg-black/80 text-slate-900 dark:text-white text-[9px] font-bold px-2.5 py-1 rounded-md z-10 shadow-sm">Coming soon</span>
+          ${(featuredApp.bannerDataUrl || featuredApp.iconDataUrl) 
+            ? `<img src="${featuredApp.bannerDataUrl || featuredApp.iconDataUrl}" class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700">`
+            : `<div class="w-full h-full bg-slate-850 flex items-center justify-center"><i data-lucide="image" class="w-10 h-10 text-slate-650"></i></div>`
+          }
         </div>
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent flex flex-col justify-end p-5 sm:p-6">
-          <span class="bg-white text-slate-900 text-[10px] font-bold px-3 py-1.5 rounded-full w-max mb-3 shadow-sm">Coming soon</span>
-          <h2 class="text-white text-xl sm:text-2xl font-medium leading-tight mb-4 tracking-tight drop-shadow-sm">${featuredApp.title}</h2>
-          
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] overflow-hidden shadow-md flex-shrink-0 bg-slate-800 border border-slate-700">
-              ${appCardHTML(featuredApp)}
+        <!-- Card App Info Row (Google Play Store Style Layout) -->
+        <div class="p-4 flex items-center justify-between gap-3 bg-white dark:bg-[#1e1e1f] border-t border-slate-100 dark:border-slate-800/50">
+          <div class="flex items-center gap-3.5 min-w-0 cursor-pointer flex-1" onclick="openAppModal('${featuredApp.id}')">
+            <div class="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden shadow-sm border border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-805">
+              ${appCardHTML(featuredApp, true)}
             </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="text-white text-sm font-medium truncate">${escapeHtml(featuredApp.title)}</h3>
-              <p class="text-slate-300 text-[11px] truncate">${escapeHtml(featuredApp.authorName)}</p>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="bg-slate-800 text-slate-300 text-[9px] px-1.5 py-0.5 rounded border border-slate-600 font-bold">12+</span>
-                <span class="text-slate-400 text-[10px]">Rated for 12+</span>
+            <div class="min-w-0">
+              <h3 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white truncate">${escapeHtml(featuredApp.title)}</h3>
+              <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(featuredApp.authorName)}</p>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">12+</span>
+                <span class="text-[9px] text-slate-450 dark:text-slate-500">Rated for 12+</span>
               </div>
             </div>
-            <button class="bg-blue-200 hover:bg-blue-300 text-blue-900 px-6 py-2 rounded-full font-medium text-[13px] shadow-sm transition-colors">Install</button>
+          </div>
+          <div class="flex flex-col items-center flex-shrink-0">
+            <button onclick="openAppModal('${featuredApp.id}')" class="bg-[#c2e7ff] dark:bg-[#004b73] hover:bg-[#b2e0ff] dark:hover:bg-[#005c8a] text-[#001d35] dark:text-[#c2e7ff] px-6 py-2.5 rounded-full font-extrabold text-[12px] shadow-sm transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 duration-200">
+              Install
+            </button>
+            <span class="text-[8px] text-slate-400 dark:text-slate-500 mt-1 block">In-app purchases</span>
           </div>
         </div>
       </div>
