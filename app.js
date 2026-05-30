@@ -60,6 +60,23 @@ const LOGO_SVG = `<svg viewBox="0 0 100 100" class="w-full h-full" fill="none" x
   <rect x="42" y="46" width="16" height="8" rx="3" fill="#10B981" />
 </svg>`;
 
+// ── ATTENDEASE OFF-THE-SHELF SEED APP ──
+const ATTENDEASE_APP = {
+  id: 'attendease-app',
+  title: 'AttendEase',
+  category: 'Productivity',
+  description: 'AttendEase is a highly efficient, automated attendance tracking and check-in mobile application designed for schools, universities, and corporate events. Featuring digital registers, detailed reports, and real-time synchronization, managing check-ins has never been easier or more reliable.',
+  appInfo: 'Version: 1.0.0\nSize: 8.8 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: HankStudio',
+  size: '8.8 MB',
+  iconDataUrl: 'downloads/attendease_logo.png',
+  downloadLink: 'downloads/AttendEase.apk',
+  screenshots: [],
+  authorUid: 'hankstudio-developer',
+  authorName: 'HankStudio Developer',
+  uploadedAt: '2026-05-30T00:00:00.000Z',
+  isSponsored: true
+};
+
 // ── APP DATA (Cloud Firebase state) ──
 let APPS_DATA = [];
 
@@ -157,8 +174,21 @@ function initializePlatform() {
       snapshot.forEach((doc) => {
         APPS_DATA.push({ id: doc.id, ...doc.data() });
       });
+      
+      // Ensure AttendEase is always seeded in APPS_DATA
+      if (!APPS_DATA.some(a => a.id === 'attendease-app' || a.title === 'AttendEase')) {
+        APPS_DATA.unshift(ATTENDEASE_APP);
+      }
+      renderContent();
+    }, (error) => {
+      console.warn("Firestore snapshot error, loading fallback:", error);
+      APPS_DATA = [ATTENDEASE_APP];
       renderContent();
     });
+  } else {
+    // Offline local seeding
+    APPS_DATA = [ATTENDEASE_APP];
+    renderContent();
   }
 
   // Hide page loader unconditionally after a blazingly fast timeout (150ms)
@@ -866,21 +896,33 @@ function renderHomeHTML() {
     `;
   }
 
-  const suggestedApps = [...APPS_DATA].reverse().slice(0, 3);
-  const suggestedHTML = suggestedApps.map(app => `
-    <div class="flex items-center gap-4 py-2.5 cursor-pointer group" onclick="openAppModal('${app.id}')">
-      <div class="w-[60px] h-[60px] rounded-[1.1rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">${appCardHTML(app)}</div>
-      <div class="flex-1 min-w-0">
-        <h3 class="font-medium text-slate-900 dark:text-white text-[13px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
-        <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • Single player</p>
-        <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-          <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">4.4 <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
-          <span>•</span>
-          <span>${app.size || '268 MB'}</span>
+  // Prioritize Sponsored Apps (AttendEase is first!)
+  let sponsoredApps = APPS_DATA.filter(a => a.isSponsored || a.title === 'AttendEase');
+  if (sponsoredApps.length === 0) {
+    sponsoredApps = [...APPS_DATA].reverse().slice(0, 3);
+  } else {
+    // Fill up to 3 apps if needed
+    const otherApps = APPS_DATA.filter(a => !sponsoredApps.some(s => s.id === a.id));
+    sponsoredApps = [...sponsoredApps, ...otherApps].slice(0, 3);
+  }
+
+  const suggestedHTML = sponsoredApps.map(app => {
+    const isAttendEase = app.title === 'AttendEase';
+    return `
+      <div class="flex items-center gap-4 py-2.5 cursor-pointer group" onclick="openAppModal('${app.id}')">
+        <div class="w-[60px] h-[60px] rounded-[1.1rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">${appCardHTML(app)}</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-medium text-slate-900 dark:text-white text-[13px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
+          <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • ${isAttendEase ? 'Productivity Check-in' : 'Featured App'}</p>
+          <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">${isAttendEase ? '4.9' : '4.4'} <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
+            <span>•</span>
+            <span>${app.size || '8.8 MB'}</span>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   const games = APPS_DATA.filter(a => a.category === 'Games');
   const gamesHTML = games.length ? games.map(app => `
