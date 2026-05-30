@@ -1,6 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// Firebase is loaded via compat CDN in index.html
 
 const firebaseConfig = {
   apiKey: "AIzaSyDN95soIqy3L9dDyp8K82gWIyUnR95VAcQ",
@@ -14,9 +12,9 @@ const firebaseConfig = {
 
 let firebaseApp = null, auth = null, db = null;
 try {
-  firebaseApp = initializeApp(firebaseConfig);
-  auth = getAuth(firebaseApp);
-  db = getFirestore(firebaseApp);
+  firebaseApp = firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
 } catch (e) {
   console.error("Firebase failed to initialize statically:", e);
 }
@@ -134,7 +132,7 @@ function initializePlatform() {
 
   // Firebase Auth Listener (Defensively Guarded)
   if (auth) {
-    onAuthStateChanged(auth, (user) => {
+    auth.onAuthStateChanged((user) => {
       if (user) {
         currentUser = { 
           name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
@@ -153,8 +151,7 @@ function initializePlatform() {
 
   // Firebase Firestore Listener (Defensively Guarded)
   if (db) {
-    const q = query(collection(db, "apps"), orderBy("uploadedAt", "desc"));
-    onSnapshot(q, (snapshot) => {
+    db.collection("apps").orderBy("uploadedAt", "desc").onSnapshot((snapshot) => {
       APPS_DATA = [];
       snapshot.forEach((doc) => {
         APPS_DATA.push({ id: doc.id, ...doc.data() });
@@ -214,7 +211,7 @@ window.handleLogin = async function() {
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
   try {
-    await signInWithEmailAndPassword(auth, email, pw);
+    await auth.signInWithEmailAndPassword(email, pw);
     document.getElementById('auth-success-title').textContent = `Welcome back!`;
     document.getElementById('auth-success-msg').textContent = 'You are now logged in.';
     switchAuthView('success');
@@ -230,8 +227,8 @@ window.handleGoogleLogin = async function() {
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
   try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await auth.signInWithPopup(provider);
     document.getElementById('auth-success-title').textContent = `Welcome, ${result.user.displayName || 'Developer'}!`;
     document.getElementById('auth-success-msg').textContent = 'You are now logged in.';
     switchAuthView('success');
@@ -258,8 +255,8 @@ window.handleSignup = async function() {
     return;
   }
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, pw);
-    await updateProfile(userCredential.user, { displayName: name });
+    const userCredential = await auth.createUserWithEmailAndPassword(email, pw);
+    await userCredential.user.updateProfile({ displayName: name });
     document.getElementById('auth-success-title').textContent = `Welcome, ${name}!`;
     document.getElementById('auth-success-msg').textContent = 'Your account has been created.';
     switchAuthView('success');
@@ -273,7 +270,7 @@ window.handleSignup = async function() {
 
 window.logOut = async function() {
   try {
-    await signOut(auth);
+    await auth.signOut();
     currentUser = null;
     safeStorage.setItem('hankstudio_current_user', 'null');
     updateHeaderAuth();
@@ -845,7 +842,7 @@ window.handleAppUpload = async function() {
   }
 
   try {
-    await addDoc(collection(db, "apps"), {
+    await db.collection("apps").add({
       title: name,
       category,
       description: desc,
@@ -885,7 +882,7 @@ window.handleAppUpload = async function() {
 window.deleteApp = async function(id) {
   if (!confirm('Delete this app from the cloud? This cannot be undone.')) return;
   try {
-    await deleteDoc(doc(db, "apps", id));
+    await db.collection("apps").doc(id).delete();
   } catch (err) {
     alert("Error deleting: " + err.message);
   }
@@ -979,8 +976,7 @@ window.fetchReviews = async function(appId) {
   setReviewRating(0);
 
   try {
-    const q = query(collection(db, `apps/${appId}/reviews`), orderBy('timestamp', 'desc'));
-    const snap = await getDocs(q);
+    const snap = await db.collection(`apps/${appId}/reviews`).orderBy('timestamp', 'desc').get();
     
     let sum = 0, count = 0;
     let html = '';
@@ -1023,7 +1019,7 @@ window.submitReview = async function() {
   btn.disabled = true;
 
   try {
-    await addDoc(collection(db, `apps/${selectedApp.id}/reviews`), {
+    await db.collection(`apps/${selectedApp.id}/reviews`).add({
       userId: currentUser.uid,
       userName: currentUser.name,
       rating: currentReviewRating,
