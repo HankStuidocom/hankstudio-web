@@ -2285,6 +2285,20 @@ window.fetchReviews = async function(appId, requestId = null) {
         APPS_DATA[appIndex].reviewCount = selectedApp.reviewCount;
         renderContent(); // Re-render the main page list behind the modal
       }
+      
+      // Persist the new rating to Firestore so it shows correctly on page load
+      if (db) {
+        db.collection('apps').doc(selectedApp.id).update({
+          rating: selectedApp.rating,
+          reviewCount: selectedApp.reviewCount
+        }).catch(err => {
+          // If the app doesn't exist yet (e.g. attendease-app), try set with merge
+          db.collection('apps').doc(selectedApp.id).set({
+            rating: selectedApp.rating,
+            reviewCount: selectedApp.reviewCount
+          }, { merge: true }).catch(console.warn);
+        });
+      }
     }
 
     // Dynamic Stars Summary
