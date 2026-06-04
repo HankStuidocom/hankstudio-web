@@ -910,14 +910,18 @@ function trackDownload(appId) {
 }
 
 function attachModalSwipeHandlers() {
+  const modalWrapper = document.getElementById('app-detail-modal');
   const modalCard = document.querySelector('#app-detail-modal > div');
-  if (!modalCard) return;
+  if (!modalCard || !modalWrapper) return;
   modalCard.addEventListener('touchstart', (event) => {
     modalTouchStartY = event.touches && event.touches[0] ? event.touches[0].clientY : 0;
   }, { passive: true });
   modalCard.addEventListener('touchend', (event) => {
     const endY = event.changedTouches && event.changedTouches[0] ? event.changedTouches[0].clientY : 0;
-    if (modalTouchStartY && endY - modalTouchStartY > 110) closeAppModal();
+    // Only close if we pull down significantly AND we are already at the top of the modal scroll
+    if (modalTouchStartY && endY - modalTouchStartY > 110 && modalWrapper.scrollTop <= 5) {
+      closeAppModal();
+    }
     modalTouchStartY = 0;
   }, { passive: true });
 }
