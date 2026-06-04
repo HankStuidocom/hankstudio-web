@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>HankStudio — Admin Panel</title>
+  <meta name="description" content="HankStudio Admin Panel — Manage apps, uploads, and content.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: { DEFAULT: '#05cd74', dark: '#04b566', light: '#e6faf0' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+  <!-- Admin Panel Styles -->
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="dark min-h-screen font-sans transition-colors duration-300">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LOGIN GATE                                   -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="login-gate" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 admin-bg"></div>
+    <div class="login-card relative z-10 w-full max-w-md p-8 rounded-3xl text-center animate-fadeIn">
+      <!-- Lock Icon -->
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand to-emerald-600 flex items-center justify-center shadow-lg shadow-brand/30">
+        <i data-lucide="shield-check" class="w-10 h-10 text-white"></i>
+      </div>
+      <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">Admin Access</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">Sign in with your authorized Google account to manage HankStudio apps.</p>
+      
+      <button onclick="adminLogin()" id="login-btn" class="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white dark:bg-[#2a2a2a] border border-slate-200 dark:border-slate-700 hover:border-brand dark:hover:border-brand text-slate-800 dark:text-white font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-brand/10 active:scale-[0.97]">
+        <svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Sign in with Google
+      </button>
+
+      <div id="login-error" class="mt-4 text-sm text-red-500 hidden"></div>
+
+      <p class="mt-6 text-xs text-slate-400 dark:text-slate-600">
+        <i data-lucide="lock" class="w-3 h-3 inline -mt-0.5"></i>
+        Only authorized administrators can access this panel.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ADMIN DASHBOARD                              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="admin-dashboard" class="hidden">
+    
+    <!-- Header -->
+    <header class="admin-header sticky top-0 z-30 px-4 py-3">
+      <div class="max-w-4xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-emerald-600 flex items-center justify-center">
+            <i data-lucide="layout-dashboard" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-bold text-slate-900 dark:text-white leading-tight">HankStudio Admin</h1>
+            <p id="admin-email-display" class="text-xs text-slate-500 dark:text-slate-400"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle dark mode">
+            <i data-lucide="sun" class="w-5 h-5 text-slate-600 dark:text-slate-300 dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 text-slate-600 dark:text-slate-300 hidden dark:block"></i>
+          </button>
+          <a href="index.html" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Go to main site">
+            <i data-lucide="external-link" class="w-5 h-5 text-slate-600 dark:text-slate-300"></i>
+          </a>
+          <button onclick="adminLogout()" class="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Logout">
+            <i data-lucide="log-out" class="w-5 h-5 text-red-500"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6 pb-24">
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8 animate-fadeIn">
+        <div class="stat-card p-4 rounded-2xl">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <i data-lucide="package" class="w-4 h-4 text-brand"></i>
+            </div>
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Apps</span>
+          </div>
+          <p id="stat-total-apps" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</p>
+        </div>
+        <div class="stat-card p-4 rounded-2xl">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <i data-lucide="star" class="w-4 h-4 text-blue-500"></i>
+            </div>
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Reviews</span>
+          </div>
+          <p id="stat-total-reviews" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</p>
+        </div>
+        <div class="stat-card p-4 rounded-2xl col-span-2 sm:col-span-1">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <i data-lucide="trending-up" class="w-4 h-4 text-purple-500"></i>
+            </div>
+            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Avg Rating</span>
+          </div>
+          <p id="stat-avg-rating" class="text-2xl font-extrabold text-slate-900 dark:text-white">0.0</p>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════ -->
+      <!-- UPLOAD / EDIT FORM                       -->
+      <!-- ═══════════════════════════════════════ -->
+      <section class="form-card rounded-3xl p-6 sm:p-8 mb-8 animate-slideUp">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand to-emerald-600 flex items-center justify-center">
+            <i data-lucide="upload-cloud" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h2 id="form-title" class="text-lg font-bold text-slate-900 dark:text-white">Upload New App</h2>
+            <p id="form-subtitle" class="text-xs text-slate-500 dark:text-slate-400">Fill in the details and publish to your store</p>
+          </div>
+        </div>
+
+        <form id="app-upload-form" onsubmit="return false;" class="space-y-5">
+          <!-- App Name -->
+          <div class="form-group">
+            <label for="app-name" class="form-label">App Name <span class="text-red-400">*</span></label>
+            <input type="text" id="app-name" placeholder="e.g. AttendEase" class="form-input" required>
+          </div>
+
+          <!-- Category -->
+          <div class="form-group">
+            <label for="app-category" class="form-label">Category <span class="text-red-400">*</span></label>
+            <select id="app-category" class="form-input">
+              <option value="Productivity">Productivity</option>
+              <option value="Education">Education</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Social">Social</option>
+              <option value="Utility">Utility</option>
+              <option value="Finance">Finance</option>
+              <option value="Health">Health & Fitness</option>
+              <option value="Gaming">Gaming</option>
+              <option value="Communication">Communication</option>
+              <option value="Tools">Tools</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label for="app-description" class="form-label">Description <span class="text-red-400">*</span></label>
+            <textarea id="app-description" rows="4" placeholder="Describe what your app does..." class="form-input resize-none" required></textarea>
+          </div>
+
+          <!-- Version & Package Name (side by side) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-group">
+              <label for="app-version" class="form-label">Version</label>
+              <input type="text" id="app-version" placeholder="e.g. 1.0.0" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="app-package" class="form-label">Package Name</label>
+              <input type="text" id="app-package" placeholder="e.g. com.hankstudio.myapp" class="form-input">
+            </div>
+          </div>
+
+          <!-- Size & Download Link -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-group">
+              <label for="app-size" class="form-label">Size</label>
+              <input type="text" id="app-size" placeholder="e.g. 16 MB" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="app-download-link" class="form-label">APK Download Link <span class="text-red-400">*</span></label>
+              <input type="url" id="app-download-link" placeholder="https://drive.google.com/..." class="form-input" required>
+            </div>
+          </div>
+
+          <!-- App Icon Upload -->
+          <div class="form-group">
+            <label class="form-label">App Icon <span class="text-red-400">*</span></label>
+            <div id="icon-drop-zone" class="drop-zone" onclick="document.getElementById('icon-file-input').click()">
+              <input type="file" id="icon-file-input" accept="image/*" class="hidden" onchange="handleIconSelect(event)">
+              <div id="icon-preview-area" class="drop-zone-content">
+                <i data-lucide="image-plus" class="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2"></i>
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Drop icon here or click to browse</p>
+                <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">PNG, JPG up to 2 MB • Will be compressed to 256×256</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Banner Upload -->
+          <div class="form-group">
+            <label class="form-label">Banner Image <span class="text-slate-400 text-xs font-normal">(optional)</span></label>
+            <div id="banner-drop-zone" class="drop-zone" onclick="document.getElementById('banner-file-input').click()">
+              <input type="file" id="banner-file-input" accept="image/*" class="hidden" onchange="handleBannerSelect(event)">
+              <div id="banner-preview-area" class="drop-zone-content">
+                <i data-lucide="panorama" class="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2"></i>
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Drop banner here or click to browse</p>
+                <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">Recommended: 1200×600 • Will be compressed</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Screenshots Upload -->
+          <div class="form-group">
+            <label class="form-label">Screenshots <span class="text-slate-400 text-xs font-normal">(up to 8)</span></label>
+            <div id="screenshots-drop-zone" class="drop-zone" onclick="document.getElementById('screenshots-file-input').click()">
+              <input type="file" id="screenshots-file-input" accept="image/*" multiple class="hidden" onchange="handleScreenshotsSelect(event)">
+              <div id="screenshots-preview-area" class="drop-zone-content">
+                <i data-lucide="images" class="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2"></i>
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Drop screenshots here or click to browse</p>
+                <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">PNG, JPG • Up to 8 images • Will be compressed</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Progress -->
+          <div id="upload-progress-section" class="hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Processing...</span>
+              <span id="upload-progress-text" class="text-sm font-bold text-brand">0%</span>
+            </div>
+            <div class="progress-bar-track">
+              <div id="upload-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-3 pt-2">
+            <button type="button" onclick="publishApp()" id="publish-btn" class="publish-btn flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-white transition-all duration-300">
+              <i data-lucide="rocket" class="w-5 h-5"></i>
+              <span>Publish App</span>
+            </button>
+            <button type="button" onclick="resetForm()" class="px-5 py-3.5 rounded-2xl font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ═══════════════════════════════════════ -->
+      <!-- MANAGE EXISTING APPS                     -->
+      <!-- ═══════════════════════════════════════ -->
+      <section class="form-card rounded-3xl p-6 sm:p-8 animate-slideUp">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <i data-lucide="list" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white">Manage Apps</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Edit or remove published apps</p>
+            </div>
+          </div>
+          <button onclick="loadApps()" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Refresh">
+            <i data-lucide="refresh-cw" class="w-5 h-5 text-slate-500 dark:text-slate-400"></i>
+          </button>
+        </div>
+
+        <div id="apps-list" class="space-y-3">
+          <!-- App cards rendered by JS -->
+          <div class="text-center py-8">
+            <i data-lucide="loader-2" class="w-8 h-8 text-slate-400 dark:text-slate-600 animate-spin mx-auto mb-3"></i>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Loading apps...</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- DELETE CONFIRMATION MODAL                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+    <div class="delete-modal-card relative z-10 w-full max-w-sm p-6 rounded-3xl animate-fadeIn">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-red-500/10 flex items-center justify-center">
+        <i data-lucide="trash-2" class="w-7 h-7 text-red-500"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Delete App?</h3>
+      <p id="delete-modal-text" class="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">This action cannot be undone.</p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-2xl font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          Cancel
+        </button>
+        <button onclick="confirmDelete()" id="confirm-delete-btn" class="flex-1 py-3 rounded-2xl font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-3 pointer-events-none"></div>
+
+  <!-- Admin Panel Script -->
+  <script src="admin.js"></script>
+</body>
+</html>
