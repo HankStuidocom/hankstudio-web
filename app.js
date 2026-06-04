@@ -78,46 +78,8 @@ const LOGO_SVG = `<svg viewBox="0 0 100 100" class="w-full h-full" fill="none" x
   <rect x="42" y="46" width="16" height="8" rx="3" fill="#10B981" />
 </svg>`;
 
-// ── ATTENDEASE OFF-THE-SHELF SEED APP ──
-const ATTENDEASE_APP = {
-  id: 'attendease-app',
-  title: 'AttendEase',
-  category: 'Productivity',
-  description: 'AttendEase is a highly efficient, automated attendance attendance tracking and check-in mobile application designed for schools, universities, and corporate events. Featuring digital registers, detailed reports, and real-time synchronization, managing check-ins has never been easier or more reliable.',
-  appInfo: 'Version: 1.0.0\nSize: 16 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: HankStudio',
-  size: '16 MB',
-  iconDataUrl: 'downloads/attendease_logo.png',
-  bannerDataUrl: 'downloads/attendease_banner.png',
-  downloadLink: 'downloads/AttendEase.apk',
-  screenshots: [
-    'downloads/attendease_new_ss1.jpg',
-    'downloads/attendease_new_ss2.jpg',
-    'downloads/attendease_new_ss3.jpg',
-    'downloads/attendease_new_ss4.jpg',
-    'downloads/attendease_new_ss5.jpg'
-  ],
-  authorUid: 'hankstudio-developer',
-  authorName: 'HankStudio',
-  uploadedAt: '2026-05-30T00:00:00.000Z',
-  isSponsored: true,
-  isVerified: true,
-  isSafeDownload: true,
-  isUpdatedRecently: true,
-  downloadCount: 0,
-  rating: 0,
-  reviewCount: 0,
-  version: '1.0.0',
-  changelog: [
-    {
-      version: '1.0.0',
-      date: '2026-05-30',
-      notes: 'Initial AttendEase APK release with attendance tracking and check-in workflows.'
-    }
-  ]
-};
-
 // ── APP DATA (Cloud Firebase state) ──
-let APPS_DATA = [ATTENDEASE_APP];
+let APPS_DATA = [];
 
 const NAV_ITEMS = [
   { id: 'apps',         icon: 'layout-grid', label: 'Apps' },
@@ -335,31 +297,23 @@ function initializePlatform() {
       APPS_DATA = [];
       snapshot.forEach((doc) => {
         let data = doc.data();
-        if (doc.id === 'attendease-app') {
-          // Merge cloud data (like ratings) into the static AttendEase app object
-          data = Object.assign({}, ATTENDEASE_APP, data);
-        }
         APPS_DATA.push({ id: doc.id, ...data });
       });
       
-      // Ensure AttendEase is always seeded in APPS_DATA if it wasn't in the cloud at all
-      if (!APPS_DATA.some(a => a.id === 'attendease-app')) {
-        APPS_DATA.unshift(ATTENDEASE_APP);
-      }
       renderContent();
       refreshOuterRatingsFromReviews();
     }, (error) => {
       console.warn("Firestore snapshot error, loading fallback:", error);
       isAppDataLoading = false;
       isOfflineMode = true;
-      APPS_DATA = [ATTENDEASE_APP];
+      APPS_DATA = [];
       renderContent();
     });
   } else {
     // Offline local seeding
     isAppDataLoading = false;
     isOfflineMode = true;
-    APPS_DATA = [ATTENDEASE_APP];
+    APPS_DATA = [];
     renderContent();
   }
 
@@ -820,7 +774,7 @@ function isRecentlyUpdated(app) {
 }
 
 function isAppVerified(app) {
-  return app.isVerified === true || app.authorUid === 'hankstudio-developer' || app.title === 'AttendEase';
+  return app.isVerified === true || app.authorUid === 'hankstudio-developer';
 }
 
 function renderVerificationBadges(app, compact = false) {
@@ -1427,7 +1381,6 @@ function renderHomeHTML() {
   const featuredApp = APPS_DATA.find(a => a.category === 'Games') || APPS_DATA[0];
   let bannerHTML = '';
   if (featuredApp) {
-    const isAttendEase = featuredApp.title === 'AttendEase';
     const bannerSrc = safeImageUrl(featuredApp.bannerDataUrl || featuredApp.iconDataUrl, { allowData: true });
     bannerHTML = `
       <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-sm w-full group transition-all duration-300 hover:shadow-md">
@@ -1465,8 +1418,8 @@ function renderHomeHTML() {
     `;
   }
 
-  // Prioritize Sponsored Apps (AttendEase is first!)
-  let sponsoredApps = APPS_DATA.filter(a => a.isSponsored || a.title === 'AttendEase');
+  // Prioritize Sponsored Apps
+  let sponsoredApps = APPS_DATA.filter(a => a.isSponsored);
   if (sponsoredApps.length === 0) {
     sponsoredApps = [...APPS_DATA].reverse().slice(0, 3);
   } else {
@@ -1476,14 +1429,13 @@ function renderHomeHTML() {
   }
 
   const suggestedHTML = sponsoredApps.map(app => {
-    const isAttendEase = app.title === 'AttendEase';
     const rating = getAppRating(app).toFixed(1);
     return `
       <div class="flex items-center gap-4 py-2.5 cursor-pointer group" onclick="openAppModal('${app.id}')">
         <div class="w-[60px] h-[60px] rounded-[1.1rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">${appCardHTML(app)}</div>
         <div class="flex-1 min-w-0">
           <h3 class="font-medium text-slate-900 dark:text-white text-[13px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
-          <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • ${isAttendEase ? 'Productivity Check-in' : 'Featured App'}</p>
+          <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • Featured App</p>
           <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">${rating} <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
             <span>•</span>
@@ -1637,9 +1589,9 @@ function renderSearchHTML() {
       <div id="search-suggestions-container" class="space-y-4">
         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Trending Searches</h2>
         <div class="space-y-3">
-          <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('Attendease')">
+          <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('productivity')">
             <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i>
-            <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Attendease App</span>
+            <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Productivity Apps</span>
           </div>
           <div class="flex items-center gap-3 cursor-pointer hover:text-blue-500 transition-colors py-1" onclick="triggerSearchText('game')">
             <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i>
@@ -2272,10 +2224,6 @@ window.fetchReviews = async function(appId, requestId = null) {
       }
     }
 
-    // Fallback if empty and appId is attendease-app
-    if (dbReviews.length === 0 && appId === 'attendease-app') {
-      dbReviews = getLocalDefaultReviews(appId);
-    }
 
     // Merge with GUEST_REVIEWS_CACHE
     const cached = GUEST_REVIEWS_CACHE[appId] || [];
@@ -2578,15 +2526,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- ADMIN RESET TOOL ---
-window.resetDatabase = async function() {
-  if (!confirm("Are you sure you want to reset all AttendEase ratings and reviews?")) return;
+window.resetAppRatings = async function(appId) {
+  if (!appId) return;
+  if (!confirm("Are you sure you want to reset all ratings and reviews for this app?")) return;
   try {
-    const snap = await db.collection('apps/attendease-app/reviews').get();
+    const snap = await db.collection(`apps/${appId}/reviews`).get();
     const batch = db.batch();
     snap.forEach(doc => {
       batch.delete(doc.ref);
     });
-    batch.set(db.collection('apps').doc('attendease-app'), {
+    batch.set(db.collection('apps').doc(appId), {
       totalStars: 0,
       totalVotes: 0,
       rating: 0,
@@ -2595,9 +2544,9 @@ window.resetDatabase = async function() {
     await batch.commit();
     localStorage.removeItem('hankstudio_guest_reviews');
     localStorage.removeItem('hankstudio_reported_reviews');
-    alert("✅ Database successfully wiped! Please refresh the page.");
+    alert("✅ Ratings and reviews successfully wiped!");
     location.reload();
   } catch (err) {
-    alert("❌ Reset failed. Please make sure you have deployed the updated firestore.rules first! Error: " + err.message);
+    alert("❌ Reset failed. Error: " + err.message);
   }
 };

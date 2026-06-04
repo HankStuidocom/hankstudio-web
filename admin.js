@@ -265,9 +265,11 @@ function renderChangelogEntries() {
 
   if (changelogEntries.length === 0) {
     container.innerHTML = `
-      <div class="flex items-center gap-3 p-4 rounded-xl border border-dashed border-white/[0.06] bg-surface-input/30">
-        <i data-lucide="clock" class="w-5 h-5 text-slate-600 shrink-0"></i>
-        <p class="text-xs text-slate-500">No version history entries yet. Click "Add Version" to create the first changelog entry.</p>
+      <div class="p-6 rounded-2xl bg-surface-input/30 border border-white/[0.03] border-dashed text-center">
+        <div class="w-10 h-10 mx-auto rounded-full bg-brand/10 flex items-center justify-center mb-3">
+          <i data-lucide="history" class="w-5 h-5 text-brand"></i>
+        </div>
+        <p class="text-xs text-slate-500">No updates listed yet. Click "Add Update" to add your bug fixes and features.</p>
       </div>
     `;
     if (window.lucide) lucide.createIcons();
@@ -290,8 +292,8 @@ function renderChangelogEntries() {
         </div>
       </div>
       <div>
-        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Changelog Notes</label>
-        <textarea rows="2" onchange="updateChangelogEntry(${i}, 'notes', this.value)" class="w-full px-3 py-2 rounded-lg bg-surface-elevated border border-white/[0.05] text-white text-xs font-medium focus:border-brand/40 focus:ring-1 focus:ring-brand/15 focus:outline-none transition-all resize-none" placeholder="What's new in this version...">${escapeHtml(entry.notes)}</textarea>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Latest Update Description</label>
+        <textarea rows="2" onchange="updateChangelogEntry(${i}, 'notes', this.value)" class="w-full px-3 py-2 rounded-lg bg-surface-elevated border border-white/[0.05] text-white text-xs font-medium focus:border-brand/40 focus:ring-1 focus:ring-brand/15 focus:outline-none transition-all resize-none" placeholder="- Fixed bug with login&#10;- Improved UI...">${escapeHtml(entry.notes)}</textarea>
       </div>
     </div>
   `).join('');
