@@ -886,6 +886,42 @@ function getSourceDomain(url) {
   }
 }
 
+function normalizeDownloadUrl(url) {
+  if (!url) return '';
+  let value = String(url).trim();
+  if (!value) return '';
+
+  if (/^(\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/]|blob:)/i.test(value)) {
+    return value;
+  }
+
+  if (!/^https?:\/\//i.test(value)) return '';
+
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase();
+
+    if (host.endsWith('dropbox.com') || host === 'dl.dropboxusercontent.com') {
+      if (parsed.pathname.startsWith('/home') || parsed.pathname === '/') return '';
+      parsed.hostname = 'dl.dropboxusercontent.com';
+      parsed.searchParams.delete('raw');
+      parsed.searchParams.set('dl', '1');
+      return parsed.toString();
+    }
+
+    if (host === 'drive.google.com' || host === 'docs.google.com') {
+      const match = value.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || value.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://docs.google.com/uc?export=download&id=${match[1]}`;
+      }
+    }
+
+    return parsed.toString();
+  } catch (e) {
+    return '';
+  }
+}
+
 function getFileNameFromUrl(url) {
   const safe = safeDownloadUrl(url);
   if (!safe) return 'download';
@@ -1885,19 +1921,33 @@ window.openAppModal = async function(appId) {
     if (changelog.length) {
       changelogSection.classList.remove('hidden');
       changelogSection.innerHTML = `
-        <div class="flex justify-between items-center">
-          <h4 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white uppercase tracking-wider">Version history</h4>
-          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">v${escapeHtml(app.version || changelog[0].version || '1.0.0')}</span>
+        <div class="flex justify-between items-center mb-2">
+          <h4 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-brand"></i>
+            Latest Update
+          </h4>
+          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">v${escapeHtml(app.version || changelog[0].version || '1.0.0')}</span>
         </div>
-        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-900/30 space-y-2">
-          ${changelog.slice(0, 3).map(item => `
-            <div>
-              <p class="text-xs font-bold text-slate-800 dark:text-white">Version ${escapeHtml(item.version || app.version || '1.0.0')}</p>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(item.date || formatDate(app.updatedAt || app.uploadedAt))}</p>
-              <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-1">${escapeHtml(item.notes || 'Maintenance and polish update.')}</p>
+        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-900/30 space-y-3">
+          ${changelog.slice(0, 3).map(item => {
+            const notesList = (item.notes || 'Maintenance and polish update.')
+              .split('\n')
+              .filter(n => n.trim())
+              .map(n => `<li class="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-400 mt-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-brand shrink-0 mt-0.5"></i><span>${escapeHtml(n.replace(/^- /, '').trim())}</span></li>`)
+              .join('');
+
+            return `
+            <div class="border-b border-slate-200/60 dark:border-slate-700/50 pb-3 last:border-0 last:pb-0">
+              <div class="flex justify-between items-center mb-2">
+                <p class="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5"><i data-lucide="tag" class="w-3.5 h-3.5 text-slate-400"></i>Version ${escapeHtml(item.version || app.version || '1.0.0')}</p>
+                <p class="text-[10px] font-semibold text-brand bg-brand/10 px-2 py-0.5 rounded-full">${escapeHtml(item.date || formatDate(app.updatedAt || app.uploadedAt))}</p>
+              </div>
+              <ul class="space-y-1 mt-2">${notesList}</ul>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>`;
+      if (window.lucide) lucide.createIcons();
     } else {
       changelogSection.classList.add('hidden');
       changelogSection.innerHTML = '';
@@ -2032,10 +2082,15 @@ window.confirmTrustedDownload = function() {
   const btn = document.getElementById('modal-download-btn');
   const trustScreen = document.getElementById('download-trust-screen');
   const isLocalAsset = /^(\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(url);
+  const isDirectDownload = isLocalAsset ||
+                           url.includes('dl.dropboxusercontent.com') ||
+                           url.includes('docs.google.com/uc') ||
+                           url.includes('firebasestorage.googleapis.com') ||
+                           /\.(apk|zip|rar|tar|gz|7z|bin)$/i.test(url.split('?')[0]);
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';
-  if (isLocalAsset || url.startsWith('blob:') || url.startsWith('data:')) {
+  if (isDirectDownload || url.startsWith('blob:') || url.startsWith('data:')) {
     link.download = getFileNameFromUrl(url);
   } else {
     link.target = '_blank';
@@ -2442,9 +2497,7 @@ function safeCssColor(value, fallback = '#05cd74') {
 }
 
 function safeDownloadUrl(url) {
-  if (!url) return '';
-  const value = String(url).trim();
-  if (!value) return '';
+  const value = normalizeDownloadUrl(url);
   if (/^(https?:\/\/|\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(value)) return value;
   if (value.startsWith('blob:')) return value;
   return '';

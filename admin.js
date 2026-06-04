@@ -5,6 +5,7 @@ let iconFile = null;
 let bannerFile = null;
 let screenshotFiles = [];
 let editAppId = null;
+let changelogEntries = [];
 
 // Firebase Init
 const firebaseConfig = {
@@ -23,8 +24,11 @@ try {
   auth = firebase.auth();
   db = firebase.firestore();
 } catch (e) {
-  console.error("Firebase failed to initialize statically:", e);
+  console.error("Firebase failed to initialize:", e);
 }
+
+// Force dark mode always
+document.documentElement.classList.add('dark');
 
 // Auth State Listener
 auth.onAuthStateChanged(user => {
@@ -62,7 +66,6 @@ function initDashboard() {
   loadStats();
   loadApps();
   setupDragAndDrop();
-  initDarkMode();
 }
 
 // Stats
@@ -96,17 +99,17 @@ function setupDragAndDrop() {
     
     zone.addEventListener('dragover', e => {
       e.preventDefault();
-      zone.classList.add('border-brand', 'bg-brand/5');
+      zone.classList.add('!border-brand/40', '!bg-brand/[0.06]');
     });
     
     zone.addEventListener('dragleave', e => {
       e.preventDefault();
-      zone.classList.remove('border-brand', 'bg-brand/5');
+      zone.classList.remove('!border-brand/40', '!bg-brand/[0.06]');
     });
     
     zone.addEventListener('drop', e => {
       e.preventDefault();
-      zone.classList.remove('border-brand', 'bg-brand/5');
+      zone.classList.remove('!border-brand/40', '!bg-brand/[0.06]');
       if (e.dataTransfer.files.length) {
         if (type === 'icon') handleIconSelect({ target: { files: e.dataTransfer.files } });
         else if (type === 'banner') handleBannerSelect({ target: { files: e.dataTransfer.files } });
@@ -127,8 +130,8 @@ async function handleIconSelect(e) {
   const previewArea = document.getElementById('icon-preview-area');
   previewArea.innerHTML = `
     <div class="relative inline-block mt-2">
-      <img src="${base64}" class="w-20 h-20 rounded-2xl object-cover shadow-md border border-slate-200 dark:border-slate-700">
-      <button type="button" onclick="event.stopPropagation(); removeIcon()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+      <img src="${base64}" class="w-20 h-20 rounded-2xl object-cover shadow-md border border-white/[0.08]">
+      <button type="button" onclick="event.stopPropagation(); removeIcon()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm transition-colors">
         <i data-lucide="x" class="w-3 h-3"></i>
       </button>
     </div>
@@ -140,9 +143,9 @@ function removeIcon() {
   iconFile = null;
   document.getElementById('icon-file-input').value = '';
   document.getElementById('icon-preview-area').innerHTML = `
-    <i data-lucide="image-plus" class="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2"></i>
-    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Drop icon here or click to browse</p>
-    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">PNG, JPG up to 2 MB • Will be compressed to 256×256</p>
+    <i data-lucide="image-plus" class="w-8 h-8 text-slate-600 mb-2 group-hover:text-brand/60 transition-colors"></i>
+    <p class="text-sm font-medium text-slate-500">Drop icon here or click to browse</p>
+    <p class="text-xs text-slate-600 mt-1">PNG, JPG up to 2 MB • Will be compressed to 256×256</p>
   `;
   if (window.lucide) lucide.createIcons();
 }
@@ -157,8 +160,8 @@ async function handleBannerSelect(e) {
   const previewArea = document.getElementById('banner-preview-area');
   previewArea.innerHTML = `
     <div class="relative inline-block mt-2 w-full max-w-xs">
-      <img src="${base64}" class="w-full h-32 rounded-xl object-cover shadow-md border border-slate-200 dark:border-slate-700">
-      <button type="button" onclick="event.stopPropagation(); removeBanner()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+      <img src="${base64}" class="w-full h-32 rounded-xl object-cover shadow-md border border-white/[0.08]">
+      <button type="button" onclick="event.stopPropagation(); removeBanner()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm transition-colors">
         <i data-lucide="x" class="w-3 h-3"></i>
       </button>
     </div>
@@ -170,9 +173,9 @@ function removeBanner() {
   bannerFile = null;
   document.getElementById('banner-file-input').value = '';
   document.getElementById('banner-preview-area').innerHTML = `
-    <i data-lucide="panorama" class="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2"></i>
-    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Drop banner here or click to browse</p>
-    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">Recommended: 1200×600 • Will be compressed</p>
+    <i data-lucide="panorama" class="w-8 h-8 text-slate-600 mb-2 group-hover:text-brand/60 transition-colors"></i>
+    <p class="text-sm font-medium text-slate-500">Drop banner here or click to browse</p>
+    <p class="text-xs text-slate-600 mt-1">Recommended: 1200×600 • Will be compressed</p>
   `;
   if (window.lucide) lucide.createIcons();
 }
@@ -206,17 +209,17 @@ function renderScreenshotPreviews() {
   const previewArea = document.getElementById('screenshots-preview-area');
   if (screenshotFiles.length === 0) {
     previewArea.innerHTML = `
-      <i data-lucide="images" class="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2"></i>
-      <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Drop screenshots here or click to browse</p>
-      <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">PNG, JPG • Up to 8 images • Will be compressed</p>
+      <i data-lucide="images" class="w-8 h-8 text-slate-600 mb-2 group-hover:text-brand/60 transition-colors"></i>
+      <p class="text-sm font-medium text-slate-500">Drop screenshots here or click to browse</p>
+      <p class="text-xs text-slate-600 mt-1">PNG, JPG • Up to 8 images • Will be compressed</p>
     `;
   } else {
     previewArea.innerHTML = `
       <div class="flex gap-3 overflow-x-auto pb-2 px-2 snap-x w-full">
         ${screenshotFiles.map((file, i) => `
           <div class="relative flex-shrink-0 snap-center mt-2">
-            <img src="${file.base64}" class="h-32 w-auto rounded-xl object-cover shadow-sm border border-slate-200 dark:border-slate-700">
-            <button type="button" onclick="event.stopPropagation(); removeScreenshot(${i})" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+            <img src="${file.base64}" class="h-32 w-auto rounded-xl object-cover shadow-sm border border-white/[0.08]">
+            <button type="button" onclick="event.stopPropagation(); removeScreenshot(${i})" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm transition-colors">
               <i data-lucide="x" class="w-3 h-3"></i>
             </button>
           </div>
@@ -228,7 +231,77 @@ function renderScreenshotPreviews() {
   if (window.lucide) lucide.createIcons();
 }
 
-// Publish App
+// ═══════════════════════════════════════════
+// VERSION HISTORY / CHANGELOG
+// ═══════════════════════════════════════════
+function addChangelogEntry() {
+  changelogEntries.unshift({
+    version: document.getElementById('app-version').value.trim() || '1.0.0',
+    date: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
+  renderChangelogEntries();
+  // Focus the notes field of the newly added entry
+  setTimeout(() => {
+    const firstNotes = document.querySelector('#changelog-entries textarea');
+    if (firstNotes) firstNotes.focus();
+  }, 50);
+}
+
+function removeChangelogEntry(index) {
+  changelogEntries.splice(index, 1);
+  renderChangelogEntries();
+}
+
+function updateChangelogEntry(index, field, value) {
+  if (changelogEntries[index]) {
+    changelogEntries[index][field] = value;
+  }
+}
+
+function renderChangelogEntries() {
+  const container = document.getElementById('changelog-entries');
+  if (!container) return;
+
+  if (changelogEntries.length === 0) {
+    container.innerHTML = `
+      <div class="flex items-center gap-3 p-4 rounded-xl border border-dashed border-white/[0.06] bg-surface-input/30">
+        <i data-lucide="clock" class="w-5 h-5 text-slate-600 shrink-0"></i>
+        <p class="text-xs text-slate-500">No version history entries yet. Click "Add Version" to create the first changelog entry.</p>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = changelogEntries.map((entry, i) => `
+    <div class="group relative p-4 rounded-xl bg-surface-input/50 border border-white/[0.05] hover:border-white/[0.1] transition-all duration-200">
+      <button type="button" onclick="removeChangelogEntry(${i})" class="absolute top-3 right-3 p-1 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all" title="Remove entry">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+      <div class="grid grid-cols-2 gap-3 mb-2.5">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Version</label>
+          <input type="text" value="${escapeHtml(entry.version)}" onchange="updateChangelogEntry(${i}, 'version', this.value)" class="w-full px-3 py-2 rounded-lg bg-surface-elevated border border-white/[0.05] text-white text-xs font-medium focus:border-brand/40 focus:ring-1 focus:ring-brand/15 focus:outline-none transition-all" placeholder="e.g. 1.1.0">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+          <input type="date" value="${escapeHtml(entry.date)}" onchange="updateChangelogEntry(${i}, 'date', this.value)" class="w-full px-3 py-2 rounded-lg bg-surface-elevated border border-white/[0.05] text-white text-xs font-medium focus:border-brand/40 focus:ring-1 focus:ring-brand/15 focus:outline-none transition-all">
+        </div>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Changelog Notes</label>
+        <textarea rows="2" onchange="updateChangelogEntry(${i}, 'notes', this.value)" class="w-full px-3 py-2 rounded-lg bg-surface-elevated border border-white/[0.05] text-white text-xs font-medium focus:border-brand/40 focus:ring-1 focus:ring-brand/15 focus:outline-none transition-all resize-none" placeholder="What's new in this version...">${escapeHtml(entry.notes)}</textarea>
+      </div>
+    </div>
+  `).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════
+// PUBLISH APP
+// ═══════════════════════════════════════════
 async function publishApp() {
   const name = document.getElementById('app-name').value.trim();
   const category = document.getElementById('app-category').value;
@@ -237,6 +310,9 @@ async function publishApp() {
   const packageName = document.getElementById('app-package').value.trim();
   const size = document.getElementById('app-size').value.trim();
   const downloadLink = document.getElementById('app-download-link').value.trim();
+  const authorNameInput = document.getElementById('app-author') ? document.getElementById('app-author').value.trim() : '';
+  const isVerified = document.getElementById('app-verified') ? document.getElementById('app-verified').checked : true;
+  const isSafeDownload = document.getElementById('app-safe') ? document.getElementById('app-safe').checked : true;
 
   if (!name || !category || !description || !downloadLink) {
     showToast('Missing Fields', 'Please fill in all required fields.', 'error');
@@ -245,6 +321,12 @@ async function publishApp() {
   
   if (!downloadLink.startsWith('http')) {
     showToast('Invalid URL', 'Download link must start with http or https', 'error');
+    return;
+  }
+  const processedDownloadLink = processDownloadLink(downloadLink);
+  if (!processedDownloadLink) {
+    showToast('Invalid Download Link', 'Use a public share link, not a private Dropbox or Drive admin page.', 'error');
+    updateLinkHelper(downloadLink);
     return;
   }
 
@@ -268,7 +350,7 @@ async function publishApp() {
     if (size) appInfoLines.push(`Size: ${size}`);
     if (packageName) appInfoLines.push(`Package: ${packageName}`);
     appInfoLines.push(`Format: Android APK`);
-    appInfoLines.push(`Developer: HankStudio`);
+    appInfoLines.push(`Developer: ${authorNameInput || 'HankStudio'}`);
 
     // Prepare Document
     const docData = {
@@ -277,13 +359,19 @@ async function publishApp() {
       description: description,
       appInfo: appInfoLines.join('\n'),
       size: size || 'Unknown',
-      downloadLink: downloadLink,
+      version: version || '1.0.0',
+      downloadLink: processedDownloadLink,
       authorUid: auth.currentUser.uid,
-      authorName: 'HankStudio',
-      isVerified: true,
-      isSafeDownload: true,
+      authorName: authorNameInput || 'HankStudio',
+      isVerified: isVerified,
+      isSafeDownload: isSafeDownload,
       isUpdatedRecently: true
     };
+
+    // Add changelog
+    if (changelogEntries.length > 0) {
+      docData.changelog = changelogEntries.filter(e => e.version && e.notes);
+    }
 
     if (iconFile) docData.iconDataUrl = iconFile.base64;
     if (bannerFile) docData.bannerDataUrl = bannerFile.base64;
@@ -322,42 +410,83 @@ function resetForm() {
   removeIcon();
   removeBanner();
   screenshotFiles = [];
+  changelogEntries = [];
   renderScreenshotPreviews();
+  renderChangelogEntries();
   editAppId = null;
   document.getElementById('form-title').textContent = 'Upload New App';
+  document.getElementById('form-subtitle').textContent = 'Fill in the details and publish to your store';
   document.getElementById('publish-btn').innerHTML = `<i data-lucide="rocket" class="w-5 h-5"></i><span>Publish App</span>`;
+  const helper = document.getElementById('download-link-helper');
+  if (helper) {
+    helper.classList.add('hidden');
+    helper.innerHTML = '';
+  }
   if (window.lucide) lucide.createIcons();
 }
 
-// App Management
+// ═══════════════════════════════════════════
+// APP MANAGEMENT
+// ═══════════════════════════════════════════
 function loadApps() {
   const container = document.getElementById('apps-list');
   db.collection('apps').orderBy('uploadedAt', 'desc').onSnapshot(snapshot => {
     container.innerHTML = '';
     if (snapshot.empty) {
-      container.innerHTML = '<p class="text-sm text-slate-500 text-center py-4">No apps published yet.</p>';
+      container.innerHTML = `
+        <div class="text-center py-12">
+          <i data-lucide="inbox" class="w-12 h-12 text-slate-700 mx-auto mb-3"></i>
+          <p class="text-sm text-slate-500 font-medium">No apps published yet</p>
+          <p class="text-xs text-slate-600 mt-1">Use the form above to publish your first app</p>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons();
       return;
     }
-    
+
     snapshot.forEach(doc => {
       const app = doc.data();
       const id = doc.id;
-      
+      const rating = app.totalVotes > 0 ? (app.totalStars / app.totalVotes).toFixed(1) : '—';
+      const changelogCount = Array.isArray(app.changelog) ? app.changelog.length : 0;
+
+      // Determine link type badge
+      let linkBadge = '';
+      const dl = app.downloadLink || '';
+      if (dl.includes('dropbox')) linkBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/10">Dropbox</span>';
+      else if (dl.includes('drive.google') || dl.includes('docs.google')) linkBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/10">Drive</span>';
+      else if (dl.includes('firebasestorage')) linkBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/10">Firebase</span>';
+      else if (dl.includes('github')) linkBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-500/10 text-slate-300 border border-slate-500/10">GitHub</span>';
+      else if (dl.includes('mediafire')) linkBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/10">MediaFire</span>';
+
       const div = document.createElement('div');
-      div.className = 'flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50';
+      div.className = 'group flex items-center justify-between p-4 rounded-2xl bg-surface-input/40 border border-white/[0.04] hover:border-white/[0.08] hover:bg-surface-input/60 transition-all duration-200';
       div.innerHTML = `
-        <div class="flex items-center gap-4 overflow-hidden">
-          <img src="${app.iconDataUrl || ''}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-white dark:bg-[#1E1E1E]">
-          <div class="overflow-hidden">
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${escapeHtml(app.category)} • ${formatDate(app.uploadedAt)}</p>
+        <div class="flex items-center gap-4 overflow-hidden flex-1 min-w-0">
+          <img src="${app.iconDataUrl || ''}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-surface-elevated ring-1 ring-white/[0.06]" onerror="this.style.display='none'">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-sm font-bold text-white truncate">${escapeHtml(app.title)}</h3>
+              ${linkBadge}
+            </div>
+            <div class="flex items-center gap-3 mt-0.5">
+              <span class="text-xs text-slate-500">${escapeHtml(app.category)}</span>
+              <span class="text-[10px] text-slate-600">•</span>
+              <span class="text-xs text-slate-500">v${escapeHtml(app.version || '1.0')}</span>
+              <span class="text-[10px] text-slate-600">•</span>
+              <span class="text-xs text-slate-500 flex items-center gap-0.5">
+                <i data-lucide="star" class="w-3 h-3 text-amber-400"></i>${rating}
+              </span>
+              ${changelogCount > 0 ? `<span class="text-[10px] text-slate-600">•</span><span class="text-xs text-slate-500 flex items-center gap-0.5"><i data-lucide="clock" class="w-3 h-3"></i>${changelogCount} ver</span>` : ''}
+            </div>
+            <p class="text-[10px] text-slate-600 mt-0.5">${formatDate(app.uploadedAt)}</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0 ml-4">
-          <button onclick="editApp('${id}')" class="p-2 rounded-lg text-slate-400 hover:text-brand hover:bg-brand/10 transition-colors">
+        <div class="flex items-center gap-1 flex-shrink-0 ml-3 opacity-50 group-hover:opacity-100 transition-opacity">
+          <button onclick="editApp('${id}')" class="p-2 rounded-lg text-slate-400 hover:text-brand hover:bg-brand/10 transition-colors" title="Edit app">
             <i data-lucide="pencil" class="w-4 h-4"></i>
           </button>
-          <button onclick="promptDeleteApp('${id}')" class="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          <button onclick="promptDeleteApp('${id}')" class="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete app">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
@@ -375,22 +504,39 @@ function editApp(appId) {
     
     editAppId = appId;
     document.getElementById('form-title').textContent = 'Edit App';
+    document.getElementById('form-subtitle').textContent = `Editing: ${app.title}`;
     document.getElementById('publish-btn').innerHTML = `<i data-lucide="save" class="w-5 h-5"></i><span>Update App</span>`;
     
     document.getElementById('app-name').value = app.title || '';
     document.getElementById('app-category').value = app.category || 'Other';
     document.getElementById('app-description').value = app.description || '';
     document.getElementById('app-download-link').value = app.downloadLink || '';
+    document.getElementById('app-version').value = app.version || '';
     document.getElementById('app-size').value = app.size && app.size !== 'Unknown' ? app.size : '';
     
-    // Parse appInfo
+    if (document.getElementById('app-author')) {
+      document.getElementById('app-author').value = app.authorName || 'HankStudio';
+    }
+    if (document.getElementById('app-verified')) {
+      document.getElementById('app-verified').checked = app.isVerified !== false;
+    }
+    if (document.getElementById('app-safe')) {
+      document.getElementById('app-safe').checked = app.isSafeDownload !== false;
+    }
+
+    // Parse appInfo for package name
     if (app.appInfo) {
-      const vMatch = app.appInfo.match(/Version:\s*(.+)/);
-      if (vMatch) document.getElementById('app-version').value = vMatch[1];
       const pMatch = app.appInfo.match(/Package:\s*(.+)/);
       if (pMatch) document.getElementById('app-package').value = pMatch[1];
     }
     
+    // Load changelog
+    changelogEntries = Array.isArray(app.changelog) ? JSON.parse(JSON.stringify(app.changelog)) : [];
+    renderChangelogEntries();
+
+    // Show download link helper badge
+    updateLinkHelper(app.downloadLink || '');
+
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (window.lucide) lucide.createIcons();
@@ -415,7 +561,6 @@ async function confirmDelete() {
   btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>`;
   
   try {
-    // Delete reviews subcollection first (basic cleanup, normally done by Cloud Functions)
     const revSnap = await db.collection(`apps/${appToDelete}/reviews`).get();
     const batch = db.batch();
     revSnap.docs.forEach(d => batch.delete(d.ref));
@@ -431,7 +576,9 @@ async function confirmDelete() {
   }
 }
 
-// Utils & Helpers
+// ═══════════════════════════════════════════
+// UTILS & HELPERS
+// ═══════════════════════════════════════════
 function compressImage(file, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -488,62 +635,199 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-// Toasts
+// ═══════════════════════════════════════════
+// TOASTS
+// ═══════════════════════════════════════════
 function showToast(title, message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
   
   const toast = document.createElement('div');
   const colors = {
-    success: 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800',
-    error: 'bg-red-50 text-red-900 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-800',
-    info: 'bg-blue-50 text-blue-900 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
-    warning: 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800'
+    success: 'bg-emerald-950/80 text-emerald-200 border-emerald-800/50',
+    error: 'bg-red-950/80 text-red-200 border-red-800/50',
+    info: 'bg-blue-950/80 text-blue-200 border-blue-800/50',
+    warning: 'bg-amber-950/80 text-amber-200 border-amber-800/50'
   };
   
   const icons = {
     success: 'check-circle', error: 'alert-circle', info: 'info', warning: 'alert-triangle'
   };
   
-  toast.className = `flex items-start gap-3 p-4 rounded-2xl border shadow-lg transition-all duration-300 transform translate-x-full opacity-0 ${colors[type]} w-80 backdrop-blur-md`;
+  toast.className = `flex items-start gap-3 p-4 rounded-2xl border shadow-lg transition-all duration-300 transform translate-x-full opacity-0 ${colors[type]} w-80 backdrop-blur-xl pointer-events-auto`;
   toast.innerHTML = `
     <i data-lucide="${icons[type]}" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
     <div>
       <h4 class="text-sm font-bold">${escapeHtml(title)}</h4>
-      <p class="text-xs opacity-90 mt-0.5">${escapeHtml(message)}</p>
+      <p class="text-xs opacity-80 mt-0.5">${escapeHtml(message)}</p>
     </div>
   `;
   
   container.appendChild(toast);
   if (window.lucide) lucide.createIcons();
-  
-  // Animate in
+
   setTimeout(() => {
     toast.classList.remove('translate-x-full', 'opacity-0');
   }, 10);
   
-  // Animate out
   setTimeout(() => {
     toast.classList.add('translate-x-full', 'opacity-0');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 }
 
-// Dark Mode
-function initDarkMode() {
-  const isDark = localStorage.getItem('hankstudio_admin_theme') === 'dark' || 
-    (!localStorage.getItem('hankstudio_admin_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  if (isDark) document.documentElement.classList.add('dark');
-  else document.documentElement.classList.remove('dark');
+// ═══════════════════════════════════════════
+// DIRECT DOWNLOAD LINK HELPERS
+// ═══════════════════════════════════════════
+function processDownloadLink(url) {
+  if (!url) return '';
+  const value = String(url).trim();
+  if (!value || !/^https?:\/\//i.test(value)) return '';
+
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase();
+
+    if (host.endsWith('dropbox.com') || host === 'dl.dropboxusercontent.com') {
+      if (parsed.pathname.startsWith('/home') || parsed.pathname === '/') return '';
+      parsed.hostname = 'dl.dropboxusercontent.com';
+      parsed.searchParams.delete('raw');
+      parsed.searchParams.set('dl', '1');
+      return parsed.toString();
+    }
+
+    if (host === 'drive.google.com' || host === 'docs.google.com') {
+      const match = value.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || value.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://docs.google.com/uc?export=download&id=${match[1]}`;
+      }
+    }
+
+    return parsed.toString();
+  } catch (e) {
+    return '';
+  }
 }
 
-function toggleDarkMode() {
-  document.documentElement.classList.toggle('dark');
-  const isDark = document.documentElement.classList.contains('dark');
-  localStorage.setItem('hankstudio_admin_theme', isDark ? 'dark' : 'light');
-}
+function updateLinkHelper(url) {
+  const helper = document.getElementById('download-link-helper');
+  if (!helper) return;
 
-// Initialization
-document.addEventListener('DOMContentLoaded', () => {
+  const val = url.trim();
+  if (!val) {
+    helper.classList.add('hidden');
+    helper.innerHTML = '';
+    return;
+  }
+
+  helper.classList.remove('hidden');
+
+  if (val.includes('dropbox.com') || val.includes('dl.dropboxusercontent.com')) {
+    const directUrl = processDownloadLink(val);
+    if (!directUrl) {
+      helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-red-950/20 text-red-300 border-red-800/30";
+      helper.innerHTML = `
+        <div class="flex items-start gap-2 text-left">
+          <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="block font-bold">Dropbox admin/private link detected</strong>
+            <span class="block opacity-80 mt-0.5">Use Dropbox's Copy Link button on the file. The link should start with https://www.dropbox.com/s/... or https://www.dropbox.com/scl/fi/...</span>
+          </div>
+        </div>
+      `;
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-emerald-950/20 text-emerald-300 border-emerald-800/30";
+    helper.innerHTML = `
+      <div class="flex items-start gap-2 text-left">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block font-bold">Dropbox direct link detected!</strong>
+          <span class="block opacity-80 mt-0.5">Auto-converted to direct download. Ensure sharing is set to "Anyone with the link".</span>
+          <code class="block font-mono text-[10px] bg-emerald-950/40 p-1.5 rounded mt-1.5 overflow-x-auto select-all break-all">${escapeHtml(directUrl)}</code>
+        </div>
+      </div>
+    `;
+  } else if (val.includes('drive.google.com') || val.includes('docs.google.com/uc')) {
+    const directUrl = processDownloadLink(val);
+    helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-blue-950/20 text-blue-300 border-blue-800/30";
+    helper.innerHTML = `
+      <div class="flex items-start gap-2 text-left">
+        <i data-lucide="check-circle" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block font-bold">Google Drive link detected!</strong>
+          <span class="block opacity-80 mt-0.5">Auto-converted to direct download link:</span>
+          <code class="block font-mono text-[10px] bg-blue-950/40 p-1.5 rounded mt-1.5 overflow-x-auto select-all break-all">${escapeHtml(directUrl)}</code>
+        </div>
+      </div>
+    `;
+  } else if (val.includes('mediafire.com')) {
+    helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-amber-950/20 text-amber-300 border-amber-800/30";
+    helper.innerHTML = `
+      <div class="flex items-start gap-2 text-left">
+        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block font-bold">MediaFire link (Indirect)</strong>
+          <span class="block opacity-80 mt-0.5">MediaFire doesn't support direct downloads. Users will see MediaFire's page. Use Dropbox or Firebase Storage instead.</span>
+        </div>
+      </div>
+    `;
+  } else if (val.includes('firebasestorage.googleapis.com')) {
+    helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-emerald-950/20 text-emerald-300 border-emerald-800/30";
+    helper.innerHTML = `
+      <div class="flex items-start gap-2 text-left">
+        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block font-bold">Firebase Storage — Direct download!</strong>
+          <span class="block opacity-80 mt-0.5">100% direct link hosted in your project's storage bucket.</span>
+        </div>
+      </div>
+    `;
+  } else if (val.includes('github.com')) {
+    helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-slate-800/30 text-slate-300 border-slate-700/30";
+    helper.innerHTML = `
+      <div class="flex items-start gap-2 text-left">
+        <i data-lucide="github" class="w-4 h-4 text-white shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block font-bold">GitHub link detected</strong>
+          <span class="block opacity-80 mt-0.5">Ensure this points directly to a release asset for direct download.</span>
+        </div>
+      </div>
+    `;
+  } else {
+    helper.className = "mt-2 text-xs rounded-xl p-3 border transition-all duration-300 bg-slate-800/20 text-slate-400 border-slate-700/30";
+    helper.innerHTML = `
+      <div class="flex items-start gap-2 text-left">
+        <i data-lucide="link" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>
+        <div>
+          <strong class="block font-bold">Generic URL</strong>
+          <span class="block opacity-80 mt-0.5">Ensure this URL points directly to the file to avoid landing page redirects.</span>
+        </div>
+      </div>
+    `;
+  }
+
   if (window.lucide) lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Force dark mode
+  document.documentElement.classList.add('dark');
+
+  if (window.lucide) lucide.createIcons();
+
+  // Real-time link conversion helper
+  const downloadLinkInput = document.getElementById('app-download-link');
+  if (downloadLinkInput) {
+    downloadLinkInput.addEventListener('input', (e) => {
+      updateLinkHelper(e.target.value);
+    });
+  }
+
+  // Render empty changelog
+  renderChangelogEntries();
 });
