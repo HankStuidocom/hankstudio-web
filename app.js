@@ -2271,6 +2271,18 @@ window.fetchReviews = async function(appId, requestId = null) {
       document.getElementById('modal-review-count-total').textContent = '0';
       document.getElementById('modal-stat-rating-count').textContent = `0 reviews`;
     }
+    
+    // Update global app state so it reflects on the main page
+    if (selectedApp) {
+      selectedApp.rating = parseFloat(averageRating) || 0;
+      selectedApp.reviewCount = count;
+      const appIndex = APPS_DATA.findIndex(a => a.id === selectedApp.id);
+      if (appIndex !== -1) {
+        APPS_DATA[appIndex].rating = selectedApp.rating;
+        APPS_DATA[appIndex].reviewCount = selectedApp.reviewCount;
+        renderContent(); // Re-render the main page list behind the modal
+      }
+    }
 
     // Dynamic Stars Summary
     const starsSummary = document.getElementById('modal-reviews-stars-summary');
