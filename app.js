@@ -333,11 +333,16 @@ function initializePlatform() {
       isOfflineMode = false;
       APPS_DATA = [];
       snapshot.forEach((doc) => {
-        APPS_DATA.push({ id: doc.id, ...doc.data() });
+        let data = doc.data();
+        if (doc.id === 'attendease-app') {
+          // Merge cloud data (like ratings) into the static AttendEase app object
+          data = Object.assign({}, ATTENDEASE_APP, data);
+        }
+        APPS_DATA.push({ id: doc.id, ...data });
       });
       
-      // Ensure AttendEase is always seeded in APPS_DATA
-      if (!APPS_DATA.some(a => a.id === 'attendease-app' || a.title === 'AttendEase')) {
+      // Ensure AttendEase is always seeded in APPS_DATA if it wasn't in the cloud at all
+      if (!APPS_DATA.some(a => a.id === 'attendease-app')) {
         APPS_DATA.unshift(ATTENDEASE_APP);
       }
       renderContent();
