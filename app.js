@@ -166,6 +166,7 @@ let isAppDataLoading = true;
 let isOfflineMode = false;
 let pendingTrustedDownload = null;
 let modalTouchStartY = 0;
+let modalTouchStartScrollY = 0;
 
 // ── SAFE LOCAL STORAGE LOADING ──
 let currentUser = null;
@@ -915,14 +916,16 @@ function attachModalSwipeHandlers() {
   if (!modalCard || !modalWrapper) return;
   modalCard.addEventListener('touchstart', (event) => {
     modalTouchStartY = event.touches && event.touches[0] ? event.touches[0].clientY : 0;
+    modalTouchStartScrollY = modalWrapper.scrollTop;
   }, { passive: true });
   modalCard.addEventListener('touchend', (event) => {
     const endY = event.changedTouches && event.changedTouches[0] ? event.changedTouches[0].clientY : 0;
-    // Only close if we pull down significantly AND we are already at the top of the modal scroll
-    if (modalTouchStartY && endY - modalTouchStartY > 110 && modalWrapper.scrollTop <= 5) {
+    // Only close if we pull down significantly AND we STARTED the swipe at the very top of the modal scroll
+    if (modalTouchStartY && (endY - modalTouchStartY > 110) && modalTouchStartScrollY <= 5) {
       closeAppModal();
     }
     modalTouchStartY = 0;
+    modalTouchStartScrollY = 0;
   }, { passive: true });
 }
 
