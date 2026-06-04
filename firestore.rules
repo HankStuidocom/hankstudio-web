@@ -1,76 +1,8 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function hasDeveloperAccess() {
-      return isSignedIn()
-        && (
-          request.auth.token.developer == true ||
-          request.auth.token.admin == true ||
-          request.auth.token.owner == true ||
-          request.auth.token.role == 'developer' ||
-          request.auth.token.role == 'admin' ||
-          request.auth.token.role == 'owner' ||
-          (
-            exists(/databases/$(database)/documents/developerAccess/$(request.auth.uid))
-            && get(/databases/$(database)/documents/developerAccess/$(request.auth.uid)).data.enabled == true
-            && (
-              get(/databases/$(database)/documents/developerAccess/$(request.auth.uid)).data.role == 'developer' ||
-              get(/databases/$(database)/documents/developerAccess/$(request.auth.uid)).data.role == 'admin' ||
-              get(/databases/$(database)/documents/developerAccess/$(request.auth.uid)).data.role == 'owner'
-            )
-          )
-        );
-    }
-
-    function validAppCreateOrUpdate() {
-      return request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.title.size() <= 80
-        && request.resource.data.category is string
-        && request.resource.data.description is string
-        && request.resource.data.description.size() > 0
-        && request.resource.data.description.size() <= 4000
-        && request.resource.data.downloadLink is string
-        && request.resource.data.downloadLink.matches('^(https?://|/|\\./|\\.\\./|[A-Za-z]:[\\\\/]|downloads[\\\\/]).*$')
-        && request.resource.data.authorUid == request.auth.uid;
-    }
-
-    function validAppDelete() {
-      return resource.data.authorUid == request.auth.uid;
-    }
-
-    function validReviewData() {
-      return request.resource.data.userId == request.auth.uid
-        && request.resource.data.userName is string
-        && request.resource.data.userName.size() <= 60
-        && request.resource.data.comment is string
-        && request.resource.data.comment.size() > 0
-        && request.resource.data.comment.size() <= 1000
-        && request.resource.data.rating is int
-        && request.resource.data.rating >= 1
-        && request.resource.data.rating <= 5;
-    }
-
-    match /apps/{appId} {
-      allow read: if true;
-      allow create, update: if hasDeveloperAccess() && validAppCreateOrUpdate();
-      allow delete: if hasDeveloperAccess() && validAppDelete();
-
-      match /reviews/{reviewId} {
-        allow read: if true;
-        allow create: if isSignedIn() && validReviewData();
-        allow update, delete: if false;
-      }
-    }
-
-    match /developerAccess/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow write: if false;
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

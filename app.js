@@ -2501,3 +2501,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
   }
 });
+
+// --- ADMIN RESET TOOL ---
+window.resetDatabase = async function() {
+  if (!confirm("Are you sure you want to reset all AttendEase ratings and reviews?")) return;
+  try {
+    const snap = await db.collection('apps/attendease-app/reviews').get();
+    const batch = db.batch();
+    snap.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    batch.set(db.collection('apps').doc('attendease-app'), {
+      totalStars: 0,
+      totalVotes: 0,
+      rating: 0,
+      reviewCount: 0
+    }, { merge: true });
+    await batch.commit();
+    localStorage.removeItem('hankstudio_guest_reviews');
+    localStorage.removeItem('hankstudio_reported_reviews');
+    alert("✅ Database successfully wiped! Please refresh the page.");
+    location.reload();
+  } catch (err) {
+    alert("❌ Reset failed. Please make sure you have deployed the updated firestore.rules first! Error: " + err.message);
+  }
+};
