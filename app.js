@@ -84,16 +84,20 @@ const ATTENDEASE_APP = {
   title: 'AttendEase',
   category: 'Productivity',
   description: 'AttendEase is a highly efficient, automated attendance attendance tracking and check-in mobile application designed for schools, universities, and corporate events. Featuring digital registers, detailed reports, and real-time synchronization, managing check-ins has never been easier or more reliable.',
-  appInfo: 'Version: 1.0.0\nSize: 16 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: Jai Techno',
+  appInfo: 'Version: 1.0.0\nSize: 16 MB\nPackage: com.hankstudio.attendease\nFormat: Android APK\nDeveloper: HankStudio',
   size: '16 MB',
   iconDataUrl: 'downloads/attendease_logo.png',
   bannerDataUrl: 'downloads/attendease_banner.png',
   downloadLink: 'downloads/AttendEase.apk',
   screenshots: [
-    'downloads/attendease_ss1.jpg'
+    'downloads/attendease_new_ss1.jpg',
+    'downloads/attendease_new_ss2.jpg',
+    'downloads/attendease_new_ss3.jpg',
+    'downloads/attendease_new_ss4.jpg',
+    'downloads/attendease_new_ss5.jpg'
   ],
   authorUid: 'hankstudio-developer',
-  authorName: 'Jai Techno',
+  authorName: 'HankStudio',
   uploadedAt: '2026-05-30T00:00:00.000Z',
   isSponsored: true,
   isVerified: true,
