@@ -166,6 +166,7 @@ let isAppDataLoading = true;
 let isOfflineMode = false;
 let pendingTrustedDownload = null;
 let modalTouchStartY = 0;
+let ratingsRefreshToken = 0;
 let modalTouchStartScrollY = 0;
 
 // ── SAFE LOCAL STORAGE LOADING ──
@@ -346,6 +347,7 @@ function initializePlatform() {
         APPS_DATA.unshift(ATTENDEASE_APP);
       }
       renderContent();
+      refreshOuterRatingsFromReviews();
     }, (error) => {
       console.warn("Firestore snapshot error, loading fallback:", error);
       isAppDataLoading = false;
@@ -752,6 +754,55 @@ function getAppReviewCount(app) {
   }
   const value = Number(app.reviewCount || app.ratingsCount || 0);
   return Number.isFinite(value) ? value : 0;
+}
+
+function applyAppRating(appId, rating, reviewCount, { rerender = false } = {}) {
+  const safeRating = Number.isFinite(Number(rating)) ? Number(rating) : 0;
+  const safeCount = Number.isFinite(Number(reviewCount)) ? Number(reviewCount) : 0;
+  const appIndex = APPS_DATA.findIndex(a => a.id === appId);
+  if (appIndex !== -1) {
+    APPS_DATA[appIndex].rating = safeRating;
+    APPS_DATA[appIndex].averageRating = safeRating;
+    APPS_DATA[appIndex].reviewCount = safeCount;
+    APPS_DATA[appIndex].ratingsCount = safeCount;
+    APPS_DATA[appIndex].totalStars = safeRating * safeCount;
+    APPS_DATA[appIndex].totalVotes = safeCount;
+  }
+  if (selectedApp && selectedApp.id === appId) {
+    selectedApp.rating = safeRating;
+    selectedApp.averageRating = safeRating;
+    selectedApp.reviewCount = safeCount;
+    selectedApp.ratingsCount = safeCount;
+    selectedApp.totalStars = safeRating * safeCount;
+    selectedApp.totalVotes = safeCount;
+  }
+  if (rerender) renderContent();
+}
+
+async function refreshOuterRatingsFromReviews() {
+  if (!db || !APPS_DATA.length) return;
+  const token = ++ratingsRefreshToken;
+  const appIds = APPS_DATA.map(app => app.id);
+  try {
+    const stats = await Promise.all(appIds.map(async (appId) => {
+      const snap = await db.collection(`apps/${appId}/reviews`).get();
+      let sum = 0;
+      let count = 0;
+      snap.forEach(doc => {
+        const value = Number((doc.data() || {}).rating);
+        if (Number.isFinite(value) && value >= 1 && value <= 5) {
+          sum += value;
+          count++;
+        }
+      });
+      return { appId, rating: count ? sum / count : 0, count };
+    }));
+    if (token !== ratingsRefreshToken) return;
+    stats.forEach(({ appId, rating, count }) => applyAppRating(appId, rating, count));
+    renderContent();
+  } catch (err) {
+    console.warn('Rating refresh failed:', err);
+  }
 }
 
 function getAppDownloadCount(app) {
@@ -1390,6 +1441,7 @@ function renderHomeHTML() {
 
   const suggestedHTML = sponsoredApps.map(app => {
     const isAttendEase = app.title === 'AttendEase';
+    const rating = getAppRating(app).toFixed(1);
     return `
       <div class="flex items-center gap-4 py-2.5 cursor-pointer group" onclick="openAppModal('${app.id}')">
         <div class="w-[60px] h-[60px] rounded-[1.1rem] overflow-hidden shadow-sm flex-shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">${appCardHTML(app)}</div>
@@ -1397,7 +1449,7 @@ function renderHomeHTML() {
           <h3 class="font-medium text-slate-900 dark:text-white text-[13px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
           <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • ${isAttendEase ? 'Productivity Check-in' : 'Featured App'}</p>
           <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-            <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">${app.rating !== undefined ? app.rating.toFixed(1) : (isAttendEase ? '0.0' : '4.4')} <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
+            <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">${rating} <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
             <span>•</span>
             <span>${app.size || '8.8 MB'}</span>
           </div>
@@ -1413,7 +1465,7 @@ function renderHomeHTML() {
       <div class="min-w-0">
         <h3 class="font-medium text-slate-900 dark:text-white text-[11px] leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
         <div class="flex items-center gap-1 mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-          <span>4.6</span><i data-lucide="star" class="w-2.5 h-2.5 fill-slate-500"></i>
+          <span>${getAppRating(app).toFixed(1)}</span><i data-lucide="star" class="w-2.5 h-2.5 fill-slate-500"></i>
         </div>
       </div>
     </div>
@@ -2272,31 +2324,7 @@ window.fetchReviews = async function(appId, requestId = null) {
       document.getElementById('modal-stat-rating-count').textContent = `0 reviews`;
     }
     
-    // Update global app state so it reflects on the main page
-    if (selectedApp) {
-      selectedApp.rating = parseFloat(averageRating) || 0;
-      selectedApp.reviewCount = count;
-      const appIndex = APPS_DATA.findIndex(a => a.id === selectedApp.id);
-      if (appIndex !== -1) {
-        APPS_DATA[appIndex].rating = selectedApp.rating;
-        APPS_DATA[appIndex].reviewCount = selectedApp.reviewCount;
-        renderContent(); // Re-render the main page list behind the modal
-      }
-      
-      // Persist the new rating to Firestore so it shows correctly on page load
-      if (db) {
-        db.collection('apps').doc(selectedApp.id).update({
-          rating: selectedApp.rating,
-          reviewCount: selectedApp.reviewCount
-        }).catch(err => {
-          // If the app doesn't exist yet (e.g. attendease-app), try set with merge
-          db.collection('apps').doc(selectedApp.id).set({
-            rating: selectedApp.rating,
-            reviewCount: selectedApp.reviewCount
-          }, { merge: true }).catch(console.warn);
-        });
-      }
-    }
+    applyAppRating(appId, parseFloat(averageRating) || 0, count, { rerender: true });
 
     // Dynamic Stars Summary
     const starsSummary = document.getElementById('modal-reviews-stars-summary');
@@ -2369,12 +2397,6 @@ window.submitReview = async function(buttonEl) {
       };
 
       await db.collection(`apps/${selectedApp.id}/reviews`).add(reviewPayload);
-      
-      // Copilot Fix: Atomically increment totalStars and totalVotes on the parent document
-      await db.collection('apps').doc(selectedApp.id).set({
-        totalStars: firebase.firestore.FieldValue.increment(currentReviewRating),
-        totalVotes: firebase.firestore.FieldValue.increment(1)
-      }, { merge: true });
 
       if (!GUEST_REVIEWS_CACHE[selectedApp.id]) {
         GUEST_REVIEWS_CACHE[selectedApp.id] = [];
