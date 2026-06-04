@@ -739,11 +739,17 @@ function formatDate(value) {
 }
 
 function getAppRating(app) {
+  if (app.totalVotes && app.totalVotes > 0) {
+    return app.totalStars / app.totalVotes;
+  }
   const value = Number(app.rating || app.averageRating || 0);
   return Number.isFinite(value) ? value : 0;
 }
 
 function getAppReviewCount(app) {
+  if (app.totalVotes !== undefined) {
+    return app.totalVotes;
+  }
   const value = Number(app.reviewCount || app.ratingsCount || 0);
   return Number.isFinite(value) ? value : 0;
 }
@@ -2363,6 +2369,12 @@ window.submitReview = async function(buttonEl) {
       };
 
       await db.collection(`apps/${selectedApp.id}/reviews`).add(reviewPayload);
+      
+      // Copilot Fix: Atomically increment totalStars and totalVotes on the parent document
+      await db.collection('apps').doc(selectedApp.id).set({
+        totalStars: firebase.firestore.FieldValue.increment(currentReviewRating),
+        totalVotes: firebase.firestore.FieldValue.increment(1)
+      }, { merge: true });
 
       if (!GUEST_REVIEWS_CACHE[selectedApp.id]) {
         GUEST_REVIEWS_CACHE[selectedApp.id] = [];
