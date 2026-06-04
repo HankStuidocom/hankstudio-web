@@ -38,6 +38,24 @@ const safeStorage = {
   }
 };
 
+function loadJsonStorage(key, fallback) {
+  const raw = safeStorage.getItem(key);
+  if (!raw || raw === 'undefined' || raw === 'null') return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveJsonStorage(key, value) {
+  try {
+    safeStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('Storage write blocked:', e);
+  }
+}
+
 // ── LOGO SVG (Premium Overlapping Geometrical Ribbon Logo) ──
 const LOGO_SVG = `<svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -72,14 +90,26 @@ const ATTENDEASE_APP = {
   bannerDataUrl: 'downloads/attendease_banner.png',
   downloadLink: 'downloads/AttendEase.apk',
   screenshots: [
-    'downloads/attendease_ss1.jpg',
-    'downloads/attendease_ss2.jpg',
-    'downloads/attendease_ss3.jpg'
+    'downloads/attendease_ss1.jpg'
   ],
   authorUid: 'hankstudio-developer',
   authorName: 'Jai Techno',
   uploadedAt: '2026-05-30T00:00:00.000Z',
-  isSponsored: true
+  isSponsored: true,
+  isVerified: true,
+  isSafeDownload: true,
+  isUpdatedRecently: true,
+  downloadCount: 0,
+  rating: 0,
+  reviewCount: 0,
+  version: '1.0.0',
+  changelog: [
+    {
+      version: '1.0.0',
+      date: '2026-05-30',
+      notes: 'Initial AttendEase APK release with attendance tracking and check-in workflows.'
+    }
+  ]
 };
 
 // ── APP DATA (Cloud Firebase state) ──
@@ -111,9 +141,27 @@ let selectedApp = null;
 let isMobileMenuOpen = false;
 let isDeveloperAuthenticated = false;
 let pendingDeveloperAccess = false;
+let developerAccessResolved = false;
 let currentGuideText = '';
 let geminiApiKey = safeStorage.getItem('gemini_api_key') || '';
 let uploadIconData = null;
+let activeReviewsRequestId = 0;
+let installButtonBusy = false;
+let installButtonResetTimer = null;
+let installButtonRestoreTimer = null;
+let REVIEW_FEEDBACK_CACHE = loadJsonStorage('hankstudio_review_feedback', {});
+let FAVORITES_CACHE = loadJsonStorage('hankstudio_favorites', []);
+let REVIEW_REPORT_CACHE = loadJsonStorage('hankstudio_review_reports', {});
+let NOTIFICATIONS_CACHE = loadJsonStorage('hankstudio_notifications', [
+  { id: 'verified-downloads', title: 'Safe downloads enabled', message: 'Downloads now show a trust check before opening.', read: false, time: 'Today' },
+  { id: 'saved-apps', title: 'Favorites added', message: 'Save apps and find them later from your profile.', read: false, time: 'Today' },
+  { id: 'review-tools', title: 'Review moderation ready', message: 'Reviews can now be reported for moderation.', read: false, time: 'Today' }
+]);
+let searchFilterState = { category: 'all', sort: 'newest', verifiedOnly: false };
+let isAppDataLoading = true;
+let isOfflineMode = false;
+let pendingTrustedDownload = null;
+let modalTouchStartY = 0;
 
 // ── SAFE LOCAL STORAGE LOADING ──
 let currentUser = null;
@@ -132,11 +180,12 @@ function toggleDarkMode() {
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.body.classList.add('dark');
+    safeStorage.setItem('hankstudio_dark_mode', 'true');
   } else {
     document.documentElement.classList.remove('dark');
     document.body.classList.remove('dark');
+    safeStorage.setItem('hankstudio_dark_mode', 'false');
   }
-  safeStorage.setItem('hankstudio_dark_mode', isDark);
 }
 
 window.toggleDarkModeAndReRender = function() {
@@ -144,79 +193,82 @@ window.toggleDarkModeAndReRender = function() {
   renderContent();
 };
 
-// ── FIREBASE REVIEWS SEEDING ──
-async function seedDefaultReviewsIfEmpty(appId) {
-  if (!db) return;
-  try {
-    const reviewsRef = db.collection(`apps/${appId}/reviews`);
-    const snap = await reviewsRef.limit(1).get();
-    if (snap.empty) {
-      console.log(`Seeding default reviews for ${appId}...`);
-      const defaultReviews = [
-        {
-          userName: "Mr Asad Pathan",
-          rating: 1,
-          comment: "very bad This is the worst app in the world. This app never works. We have never seen a worse app than this.",
-          timestamp: "2025-08-22T19:23:00.000Z",
-          helpfulCount: 2
-        },
-        {
-          userName: "Arun Kumar",
-          rating: 5,
-          comment: "Excellent app! Face attendance works fast and accurate. Very helpful for payroll management.",
-          timestamp: "2025-08-15T09:30:00.000Z",
-          helpfulCount: 15
-        },
-        {
-          userName: "Sneha Patil",
-          rating: 5,
-          comment: "Highly recommended for site management. Easy tracking and great interface.",
-          timestamp: "2025-08-10T14:20:00.000Z",
-          helpfulCount: 8
-        },
-        {
-          userName: "Rahul Sharma",
-          rating: 5,
-          comment: "Best HR payroll suite I have used. Clean design and dynamic dashboard.",
-          timestamp: "2025-08-05T11:15:00.000Z",
-          helpfulCount: 12
-        },
-        {
-          userName: "John Doe",
-          rating: 5,
-          comment: "Works perfectly on my device. Seamless check-in and checkout system.",
-          timestamp: "2025-07-28T08:45:00.000Z",
-          helpfulCount: 4
-        },
-        {
-          userName: "Meera Nair",
-          rating: 4,
-          comment: "Very useful suite, payroll is dynamic and easy to configure. A few minor lags but overall awesome.",
-          timestamp: "2025-07-20T10:00:00.000Z",
-          helpfulCount: 7
-        },
-        {
-          userName: "Vijay Prasad",
-          rating: 1,
-          comment: "App crashes on launch. Very disappointed, needs immediate fixing.",
-          timestamp: "2025-07-15T15:30:00.000Z",
-          helpfulCount: 9
-        }
-      ];
-      for (const rev of defaultReviews) {
-        await reviewsRef.add({
-          userId: 'default_seed_' + Math.random().toString(36).substring(2, 9),
-          ...rev
-        });
-      }
-      console.log(`Seeding complete for ${appId}.`);
-    }
-  } catch (e) {
-    console.error(`Error seeding reviews for ${appId}:`, e);
-  }
-}
 
 // ── INIT FUNCTION ──
+async function refreshDeveloperAccess(user) {
+  if (!user) {
+    isDeveloperAuthenticated = false;
+    developerAccessResolved = true;
+    return false;
+  }
+
+  let allowed = false;
+  try {
+    const firebaseUser = auth && auth.currentUser;
+    if (firebaseUser && typeof firebaseUser.getIdTokenResult === 'function') {
+      const token = await firebaseUser.getIdTokenResult(true);
+      const claims = token.claims || {};
+      const role = String(claims.role || '').toLowerCase();
+      allowed = claims.developer === true || claims.admin === true || claims.owner === true || ['developer', 'admin', 'owner'].includes(role);
+    }
+  } catch (e) {
+    console.warn('Developer custom-claim lookup failed:', e);
+  }
+
+  if (db) {
+    try {
+      if (!allowed) {
+        const accessDoc = await db.collection('developerAccess').doc(user.uid).get();
+        if (accessDoc.exists) {
+          const data = accessDoc.data() || {};
+          const role = String(data.role || '').toLowerCase();
+          allowed = data.enabled === true && ['developer', 'admin', 'owner'].includes(role);
+        }
+      }
+    } catch (e) {
+      console.warn('Developer access lookup failed:', e);
+    }
+  }
+
+  isDeveloperAuthenticated = allowed;
+  developerAccessResolved = true;
+  return allowed;
+}
+
+function showToast(title, message, tone = 'info') {
+  if (!document || !document.body) return;
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `app-toast app-toast-${tone}`;
+  toast.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="mt-0.5 h-2.5 w-2.5 rounded-full ${tone === 'danger' ? 'bg-red-500' : tone === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}"></div>
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-slate-900 dark:text-white">${escapeHtml(title)}</p>
+        <p class="text-[11px] leading-snug text-slate-500 dark:text-slate-300 mt-0.5">${escapeHtml(message)}</p>
+      </div>
+      <button class="ml-auto text-slate-400 hover:text-slate-700 dark:hover:text-white" aria-label="Dismiss toast">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>`;
+
+  const close = () => {
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 180);
+  };
+
+  toast.querySelector('button').addEventListener('click', close);
+  stack.appendChild(toast);
+  if (window.lucide) lucide.createIcons();
+  setTimeout(close, 2600);
+}
+
 function initializePlatform() {
   // Dark mode init (default true)
   if (safeStorage.getItem('hankstudio_dark_mode') !== 'false') {
@@ -231,18 +283,17 @@ function initializePlatform() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = LOGO_SVG;
   });
-  isDeveloperAuthenticated = !!currentUser;
+  refreshDeveloperAccess(currentUser);
   renderNavs();
   renderContent();
   renderBottomNav();
   updateHeaderAuth();
+  updateNotificationBadge();
   
-  // Seed reviews dynamically
-  seedDefaultReviewsIfEmpty('attendease-app');
 
   // Firebase Auth Listener (Defensively Guarded)
   if (auth) {
-    auth.onAuthStateChanged((user) => {
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = { 
           name: user.displayName || (user.email ? user.email.split('@')[0] : 'User'), 
@@ -254,12 +305,17 @@ function initializePlatform() {
         currentUser = null;
       }
       safeStorage.setItem('hankstudio_current_user', JSON.stringify(currentUser));
-      isDeveloperAuthenticated = !!currentUser;
+      await refreshDeveloperAccess(currentUser);
       updateHeaderAuth();
       if (currentUser && pendingDeveloperAccess) {
         pendingDeveloperAccess = false;
-        closeDeveloperModal();
-        setActiveTab('developer');
+        if (isDeveloperAuthenticated) {
+          closeDeveloperModal();
+          setActiveTab('developer');
+        } else {
+          closeDeveloperModal();
+          showToast('Developer access required', 'This account is signed in, but it is not on the developer allowlist.', 'danger');
+        }
       }
       if (activeTab === 'profile') renderContent(); 
     });
@@ -268,6 +324,8 @@ function initializePlatform() {
   // Firebase Firestore Listener (Defensively Guarded)
   if (db) {
     db.collection("apps").orderBy("uploadedAt", "desc").onSnapshot((snapshot) => {
+      isAppDataLoading = false;
+      isOfflineMode = false;
       APPS_DATA = [];
       snapshot.forEach((doc) => {
         APPS_DATA.push({ id: doc.id, ...doc.data() });
@@ -280,23 +338,29 @@ function initializePlatform() {
       renderContent();
     }, (error) => {
       console.warn("Firestore snapshot error, loading fallback:", error);
+      isAppDataLoading = false;
+      isOfflineMode = true;
       APPS_DATA = [ATTENDEASE_APP];
       renderContent();
     });
   } else {
     // Offline local seeding
+    isAppDataLoading = false;
+    isOfflineMode = true;
     APPS_DATA = [ATTENDEASE_APP];
     renderContent();
   }
 
-  // Hide page loader unconditionally after a blazingly fast timeout (150ms)
+  attachModalSwipeHandlers();
+
+  // Hide page loader after the branded opening animation has time to breathe.
   setTimeout(() => {
     const loader = document.getElementById('page-loader');
     if (loader) {
       loader.classList.add('fade-out');
       setTimeout(() => loader.style.display = 'none', 400);
     }
-  }, 150);
+  }, 900);
 }
 
 // ── ROBUST READYSTATE CHECK ──
@@ -335,6 +399,10 @@ window.switchAuthView = function(view) {
 };
 
 window.handleLogin = async function() {
+  if (!auth) {
+    showToast('Sign-in unavailable', 'Firebase auth is not available right now.', 'danger');
+    return;
+  }
   const email = document.getElementById('login-email').value.trim();
   const pw = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
@@ -353,6 +421,10 @@ window.handleLogin = async function() {
 };
 
 window.handleGoogleLogin = async function() {
+  if (!auth) {
+    showToast('Sign-in unavailable', 'Firebase auth is not available right now.', 'danger');
+    return;
+  }
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
   try {
@@ -370,6 +442,10 @@ window.handleGoogleLogin = async function() {
 };
 
 window.handleSignup = async function() {
+  if (!auth) {
+    showToast('Sign-up unavailable', 'Firebase auth is not available right now.', 'danger');
+    return;
+  }
   const name = document.getElementById('signup-name').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const pw = document.getElementById('signup-password').value;
@@ -438,6 +514,10 @@ window.openDeveloperModal = function() {
     setActiveTab('developer');
     return;
   }
+  if (currentUser && developerAccessResolved) {
+    showToast('Developer access required', 'This account is signed in, but it is not on the developer allowlist.', 'danger');
+    return;
+  }
   const overlay = document.getElementById('dev-auth-overlay');
   if (overlay) {
     overlay.style.display = 'flex';
@@ -464,9 +544,27 @@ window.toggleMobileMenu = function(open) {
 };
 
 window.setActiveTab = function(tabId) {
-  if (tabId === 'developer' && !isDeveloperAuthenticated) {
-    pendingDeveloperAccess = true;
-    openDeveloperModal();
+  if (tabId === 'developer') {
+    if (!currentUser) {
+      pendingDeveloperAccess = true;
+      openDeveloperModal();
+      return;
+    }
+    if (!developerAccessResolved) {
+      showToast('Checking access', 'Please wait while we verify developer permissions.', 'info');
+      return;
+    }
+    if (!isDeveloperAuthenticated) {
+      showToast('Developer access required', 'This signed-in account is not on the developer allowlist.', 'danger');
+      return;
+    }
+    activeTab = tabId;
+    activeSubTab = 'for-you';
+    renderNavs();
+    renderContent();
+    renderBottomNav();
+    const viewport = document.getElementById('main-content-viewport');
+    if (viewport) viewport.scrollTo({ top: 0, behavior: 'auto' });
     return;
   }
   activeTab = tabId;
@@ -486,6 +584,7 @@ window.setActiveSubTab = function(subTabId) {
 };
 
 window.searchCategory = function(catId) {
+  searchFilterState.category = CATEGORIES.some(c => c.id === catId) ? catId : 'all';
   setActiveTab('search');
   setTimeout(() => {
     const input = document.getElementById('global-search-input');
@@ -542,8 +641,8 @@ function renderBottomNav() {
   navContainer.innerHTML = items.map(item => {
     const active = activeTab === item.id;
     return `
-      <div class="flex flex-col items-center gap-0.5 cursor-pointer flex-1 py-1" onclick="setActiveTab('${item.id}')">
-        <div class="px-5 py-1 rounded-full transition-all duration-300 ${active ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400' : 'bg-transparent text-slate-500 dark:text-slate-400'}">
+      <div class="bottom-nav-item flex flex-col items-center gap-0.5 cursor-pointer flex-1 py-1 ${active ? 'is-active' : ''}" onclick="setActiveTab('${item.id}')">
+        <div class="bottom-nav-pill px-5 py-1 rounded-full transition-all duration-300 ${active ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400' : 'bg-transparent text-slate-500 dark:text-slate-400'}">
           <i data-lucide="${item.icon}" class="w-5 h-5 ${active ? 'fill-blue-600/10' : ''}"></i>
         </div>
         <span class="text-[10px] ${active ? 'font-bold text-blue-600 dark:text-blue-400' : 'font-medium text-slate-500 dark:text-slate-400'}">${item.label}</span>
@@ -563,6 +662,12 @@ function renderContent() {
     profile: renderProfileHTML, search: renderSearchHTML
   };
   vp.innerHTML = (map[activeTab] || renderAppsHTML)();
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.app-card-reveal').forEach((card, index) => {
+      card.style.animationDelay = `${Math.min(index * 45, 360)}ms`;
+      card.classList.add('card-visible');
+    });
+  });
   if (window.lucide) lucide.createIcons();
 }
 
@@ -585,6 +690,232 @@ function emptyState(icon, title, msg, btnLabel, btnTab) {
     <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">${msg}</p>
     ${btnLabel ? `<button onclick="openDeveloperModal()" class="mt-6 bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">${btnLabel}</button>` : ''}
   </div>`;
+}
+
+function renderSkeletonCards(count = 4) {
+  return Array.from({ length: count }).map(() => `
+    <div class="skeleton-card bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex items-center gap-4">
+      <div class="skeleton-block w-12 h-12 rounded-xl"></div>
+      <div class="flex-1 space-y-2">
+        <div class="skeleton-block h-3 w-2/3 rounded-full"></div>
+        <div class="skeleton-block h-2.5 w-1/3 rounded-full"></div>
+      </div>
+      <div class="skeleton-block h-7 w-14 rounded-full"></div>
+    </div>
+  `).join('');
+}
+
+function renderOfflineNotice() {
+  if (!isOfflineMode) return '';
+  return `<div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/25 text-amber-800 dark:text-amber-200 rounded-2xl p-3.5 flex gap-3 items-start">
+    <i data-lucide="wifi-off" class="w-4 h-4 mt-0.5 shrink-0"></i>
+    <div>
+      <p class="text-xs font-bold">Offline fallback mode</p>
+      <p class="text-[10px] leading-relaxed mt-0.5">Firebase is not reachable right now, so HankStudio is showing local seed content.</p>
+    </div>
+  </div>`;
+}
+
+function parseDateValue(value) {
+  if (!value) return null;
+  if (value && typeof value.toDate === 'function') return value.toDate();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatDate(value) {
+  const date = parseDateValue(value);
+  return date ? date.toLocaleDateString('en-GB') : 'Unknown';
+}
+
+function getAppRating(app) {
+  const value = Number(app.rating || app.averageRating || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getAppReviewCount(app) {
+  const value = Number(app.reviewCount || app.ratingsCount || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getAppDownloadCount(app) {
+  const localDownloads = loadJsonStorage('hankstudio_download_counts', {});
+  const value = Number(app.downloadCount || localDownloads[app.id] || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function isRecentlyUpdated(app) {
+  if (app.isUpdatedRecently === true) return true;
+  const date = parseDateValue(app.updatedAt || app.uploadedAt);
+  if (!date) return false;
+  const daysOld = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+  return daysOld <= 45;
+}
+
+function isAppVerified(app) {
+  return app.isVerified === true || app.authorUid === 'hankstudio-developer' || app.title === 'AttendEase';
+}
+
+function renderVerificationBadges(app, compact = false) {
+  const badges = [];
+  if (isAppVerified(app)) badges.push({ icon: 'badge-check', text: compact ? 'Verified' : 'Verified Developer', cls: 'bg-emerald-50 dark:bg-emerald-950/35 text-emerald-700 dark:text-emerald-300 border-emerald-200/70 dark:border-emerald-500/25' });
+  if (safeDownloadUrl(app.downloadLink) && (app.isSafeDownload !== false)) badges.push({ icon: 'shield-check', text: compact ? 'Safe' : 'Safe Download', cls: 'bg-blue-50 dark:bg-blue-950/35 text-blue-700 dark:text-blue-300 border-blue-200/70 dark:border-blue-500/25' });
+  if (isRecentlyUpdated(app)) badges.push({ icon: 'clock', text: compact ? 'Recent' : 'Updated Recently', cls: 'bg-violet-50 dark:bg-violet-950/35 text-violet-700 dark:text-violet-300 border-violet-200/70 dark:border-violet-500/25' });
+  return badges.map(badge => `
+    <span class="verification-badge ${badge.cls}">
+      <i data-lucide="${badge.icon}" class="${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}"></i>${badge.text}
+    </span>
+  `).join('');
+}
+
+function renderAppListItem(app, index = null) {
+  const rating = getAppRating(app).toFixed(1);
+  const countPrefix = index !== null ? `<span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${index + 1}</span>` : '';
+  return `
+    <div onclick="openAppModal('${app.id}')" class="app-card-reveal bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+      ${countPrefix}
+      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
+      <div class="flex-1 min-w-0">
+        <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)} &middot; ${rating} rating &middot; ${escapeHtml(app.size || 'Unknown')}</p>
+        <div class="flex flex-wrap gap-1 mt-1">${renderVerificationBadges(app, true)}</div>
+      </div>
+      <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
+    </div>`;
+}
+
+function isFavorite(appId) {
+  return Array.isArray(FAVORITES_CACHE) && FAVORITES_CACHE.includes(appId);
+}
+
+function persistFavorites() {
+  saveJsonStorage('hankstudio_favorites', FAVORITES_CACHE);
+}
+
+window.toggleFavorite = function(appId, event) {
+  if (event) event.stopPropagation();
+  if (!appId) return;
+  if (!Array.isArray(FAVORITES_CACHE)) FAVORITES_CACHE = [];
+  if (isFavorite(appId)) {
+    FAVORITES_CACHE = FAVORITES_CACHE.filter(id => id !== appId);
+    showToast('Removed', 'App removed from saved apps.', 'info');
+  } else {
+    FAVORITES_CACHE.push(appId);
+    showToast('Saved', 'App added to your profile favorites.', 'success');
+  }
+  persistFavorites();
+  updateModalFavoriteButton(appId);
+  if (activeTab === 'profile') renderContent();
+};
+
+function getSourceDomain(url) {
+  const safe = safeDownloadUrl(url);
+  if (!safe) return 'Blocked';
+  if (/^(\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(safe)) return 'HankStudio local asset';
+  try {
+    return new URL(safe).hostname.replace(/^www\./, '');
+  } catch (e) {
+    return 'Trusted source';
+  }
+}
+
+function getFileNameFromUrl(url) {
+  const safe = safeDownloadUrl(url);
+  if (!safe) return 'download';
+  try {
+    const parsed = safe.startsWith('http') ? new URL(safe).pathname : safe;
+    return decodeURIComponent(parsed.split(/[\\/]/).pop() || 'download');
+  } catch (e) {
+    return 'download';
+  }
+}
+
+function updateModalFavoriteButton(appId) {
+  const btn = document.getElementById('modal-favorite-btn');
+  if (!btn) return;
+  const saved = isFavorite(appId);
+  btn.classList.toggle('text-rose-500', saved);
+  btn.classList.toggle('dark:text-rose-400', saved);
+  btn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${saved ? 'fill-current' : ''}"></i>`;
+  btn.title = saved ? 'Remove from saved apps' : 'Save app';
+  if (window.lucide) lucide.createIcons();
+}
+
+function getUnreadNotificationCount() {
+  return NOTIFICATIONS_CACHE.filter(n => !n.read).length;
+}
+
+function updateNotificationBadge() {
+  const badge = document.getElementById('notification-count-badge');
+  if (!badge) return;
+  const unread = getUnreadNotificationCount();
+  badge.textContent = unread;
+  badge.classList.toggle('hidden', unread === 0);
+}
+
+window.openNotificationCenter = function() {
+  closeNotificationCenter();
+  const panel = document.createElement('div');
+  panel.id = 'notification-center';
+  panel.className = 'notification-center';
+  const unread = getUnreadNotificationCount();
+  panel.innerHTML = `
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="text-sm font-extrabold text-slate-900 dark:text-white">Notifications</p>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400">${unread} unread updates</p>
+      </div>
+      <button onclick="closeNotificationCenter()" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="space-y-2">
+      ${NOTIFICATIONS_CACHE.map(item => `
+        <div class="notification-item ${item.read ? 'opacity-70' : ''}">
+          <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
+            <i data-lucide="${item.read ? 'bell' : 'bell-dot'}" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-slate-900 dark:text-white">${escapeHtml(item.title)}</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">${escapeHtml(item.message)}</p>
+            <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1">${escapeHtml(item.time || 'Recent')}</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <button onclick="markNotificationsRead()" class="mt-4 w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Mark all as read</button>
+  `;
+  document.body.appendChild(panel);
+  if (window.lucide) lucide.createIcons();
+};
+
+window.closeNotificationCenter = function() {
+  const panel = document.getElementById('notification-center');
+  if (panel) panel.remove();
+};
+
+window.markNotificationsRead = function() {
+  NOTIFICATIONS_CACHE = NOTIFICATIONS_CACHE.map(n => ({ ...n, read: true }));
+  saveJsonStorage('hankstudio_notifications', NOTIFICATIONS_CACHE);
+  updateNotificationBadge();
+  openNotificationCenter();
+};
+
+function trackDownload(appId) {
+  const counts = loadJsonStorage('hankstudio_download_counts', {});
+  counts[appId] = (counts[appId] || 0) + 1;
+  saveJsonStorage('hankstudio_download_counts', counts);
+}
+
+function attachModalSwipeHandlers() {
+  const modalCard = document.querySelector('#app-detail-modal > div');
+  if (!modalCard) return;
+  modalCard.addEventListener('touchstart', (event) => {
+    modalTouchStartY = event.touches && event.touches[0] ? event.touches[0].clientY : 0;
+  }, { passive: true });
+  modalCard.addEventListener('touchend', (event) => {
+    const endY = event.changedTouches && event.changedTouches[0] ? event.changedTouches[0].clientY : 0;
+    if (modalTouchStartY && endY - modalTouchStartY > 110) closeAppModal();
+    modalTouchStartY = 0;
+  }, { passive: true });
 }
 
 // ── PROFILE PAGE ──
@@ -625,16 +956,31 @@ function renderProfileHTML() {
   }
 
   const myApps = APPS_DATA.filter(a => a.authorUid === currentUser.uid);
+  const savedApps = APPS_DATA.filter(a => isFavorite(a.id));
 
   const appsHtml = myApps.length ? `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${myApps.map(app => `
-    <div class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
+    <div class="app-card-reveal bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
       <div class="w-16 h-16 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm">${appCardHTML(app)}</div>
       <div class="flex-1 min-w-0">
         <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(app.category)}</p>
+        <div class="flex flex-wrap gap-1 mt-1">${renderVerificationBadges(app, true)}</div>
       </div>
     </div>
   `).join('')}</div>` : `<p class="text-sm text-slate-400 dark:text-slate-500">You haven't uploaded any apps yet.</p>`;
+
+  const savedHtml = savedApps.length ? `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${savedApps.map(app => `
+    <div class="app-card-reveal bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-[1.5rem] p-4 flex items-center gap-4 cursor-pointer hover:shadow-lg transition-all" onclick="openAppModal('${app.id}')">
+      <div class="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm">${appCardHTML(app, true)}</div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(app.category)}</p>
+      </div>
+      <button type="button" onclick="toggleFavorite('${app.id}', event)" class="p-2 rounded-full text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+        <i data-lucide="heart" class="w-4 h-4 fill-current"></i>
+      </button>
+    </div>
+  `).join('')}</div>` : `<p class="text-sm text-slate-400 dark:text-slate-500">Save apps with the heart button to build your personal shelf.</p>`;
 
   const displayName = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'User');
   const initialLetter = displayName.charAt(0).toUpperCase();
@@ -675,6 +1021,12 @@ function renderProfileHTML() {
       </h2>
       ${appsHtml}
     </div>
+    <div class="pt-4">
+      <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+        <i data-lucide="heart" class="w-5 h-5 text-rose-500"></i> Saved Apps
+      </h2>
+      ${savedHtml}
+    </div>
   </div>`;
 }
 
@@ -694,6 +1046,11 @@ function renderDeveloperHTML() {
 
   // Filter apps created by this developer
   const myApps = APPS_DATA.filter(a => a.authorUid === (currentUser ? currentUser.uid : 'anonymous'));
+  const devTotalDownloads = myApps.reduce((sum, app) => sum + getAppDownloadCount(app), 0);
+  const devTotalReviews = myApps.reduce((sum, app) => sum + getAppReviewCount(app), 0);
+  const ratedApps = myApps.filter(app => getAppRating(app) > 0);
+  const devAverageRating = ratedApps.length ? (ratedApps.reduce((sum, app) => sum + getAppRating(app), 0) / ratedApps.length).toFixed(1) : '0.0';
+  const devLastUpdate = myApps.length ? formatDate(myApps.map(app => parseDateValue(app.updatedAt || app.uploadedAt)).filter(Boolean).sort((a, b) => b - a)[0]) : 'None';
 
   const appsHtml = myApps.length ? `
     <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
@@ -705,7 +1062,7 @@ function renderDeveloperHTML() {
             </div>
             <div class="min-w-0">
               <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(app.title)}</h4>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(app.category)}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(app.category)} &middot; ${getAppDownloadCount(app)} downloads</p>
             </div>
           </div>
           <button onclick="deleteApp('${app.id}')" class="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-xl transition-colors border border-red-100/50 dark:border-red-500/20" title="Delete App">
@@ -814,7 +1171,7 @@ function renderDeveloperHTML() {
               class="w-full bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-brand transition-all resize-none"></textarea>
           </div>
 
-          <button onclick="handleAppUpload()"
+          <button id="upload-submit-btn" onclick="handleAppUpload()"
             class="w-full py-3 bg-brand hover:bg-brand-hover text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
             <i data-lucide="upload" class="w-4 h-4"></i> Publish Application
           </button>
@@ -842,10 +1199,19 @@ function renderDeveloperHTML() {
                 <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">${myApps.length}</p>
               </div>
               <div class="bg-slate-50 dark:bg-[#121212] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
-                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Points</p>
-                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">380</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Downloads</p>
+                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">${devTotalDownloads}</p>
+              </div>
+              <div class="bg-slate-50 dark:bg-[#121212] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Rating</p>
+                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">${devAverageRating}</p>
+              </div>
+              <div class="bg-slate-50 dark:bg-[#121212] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-3.5 text-center">
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Reviews</p>
+                <p class="text-lg font-black text-slate-900 dark:text-white mt-0.5">${devTotalReviews}</p>
               </div>
             </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 pt-1">Last update: ${escapeHtml(devLastUpdate)}</p>
           </div>
 
           <!-- Apps Management Card -->
@@ -1023,7 +1389,7 @@ function renderHomeHTML() {
           <h3 class="font-medium text-slate-900 dark:text-white text-[13px] truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${escapeHtml(app.title)}</h3>
           <p class="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">${escapeHtml(app.category)} • ${isAttendEase ? 'Productivity Check-in' : 'Featured App'}</p>
           <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-            <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">${isAttendEase ? '4.9' : '4.4'} <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
+            <span class="flex items-center gap-0.5 text-slate-700 dark:text-slate-300">${app.rating !== undefined ? app.rating.toFixed(1) : (isAttendEase ? '0.0' : '4.4')} <i data-lucide="star" class="w-2.5 h-2.5 fill-slate-700 dark:fill-slate-300"></i></span>
             <span>•</span>
             <span>${app.size || '8.8 MB'}</span>
           </div>
@@ -1087,20 +1453,13 @@ function renderHomeHTML() {
 // ── APPS PAGE ──
 function renderAppsHTML(filterFn) {
   const apps = filterFn ? APPS_DATA.filter(filterFn) : APPS_DATA;
-  const html = apps.length ? apps.map(app => `
-    <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
-      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
-      <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
-        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
-      </div>
-      <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
-    </div>`).join('') :
+  const html = isAppDataLoading ? renderSkeletonCards(5) : apps.length ? apps.map(app => renderAppListItem(app)).join('') :
     emptyState('layout-grid','Coming Soon','Check back later for new app releases!');
 
   return `<div class="max-w-2xl mx-auto p-4 space-y-6">
     <div><h1 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">All Applications</h1>
     <p class="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs mt-1">Browse and download community-uploaded software.</p></div>
+    ${renderOfflineNotice()}
     <div class="grid grid-cols-1 gap-4">${html}</div>
   </div>`;
 }
@@ -1124,39 +1483,25 @@ function renderToolsHTML() {
 }
 
 function renderTopChartsHTML() {
-  const html = APPS_DATA.length ? APPS_DATA.map((app, i) => `
-    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
-      <span class="text-xl font-extrabold text-slate-300 dark:text-slate-700 w-8 text-center">${i+1}</span>
-      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
-      <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-slate-900 dark:text-white truncate text-xs">${escapeHtml(app.title)}</h3>
-        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
-      </div>
-      <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
-    </div>`).join('') :
+  const sorted = [...APPS_DATA].sort((a, b) => getAppRating(b) - getAppRating(a) || getAppDownloadCount(b) - getAppDownloadCount(a));
+  const html = isAppDataLoading ? renderSkeletonCards(5) : sorted.length ? sorted.map((app, i) => renderAppListItem(app, i)).join('') :
     emptyState('bar-chart-2','No apps yet','Apps will appear here once uploaded.');
 
   return `<div class="max-w-2xl mx-auto p-4 space-y-6">
     <div><h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Top Charts</h1></div>
+    ${renderOfflineNotice()}
     <div class="grid grid-cols-1 gap-4">${html}</div>
   </div>`;
 }
 
 function renderNewReleasesHTML() {
-  const apps = [...APPS_DATA].reverse();
-  const html = apps.length ? apps.map(app => `
-    <div onclick="openAppModal('${app.id}')" class="flex items-center gap-4 bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 p-4 rounded-3xl cursor-pointer hover:shadow-md transition-all">
-      <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
-      <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-slate-900 dark:text-white truncate text-xs">${escapeHtml(app.title)}</h3>
-        <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
-      </div>
-      <span class="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-brand px-2 py-1 rounded-lg">NEW</span>
-    </div>`).join('') :
+  const apps = [...APPS_DATA].sort((a, b) => (parseDateValue(b.uploadedAt || b.updatedAt)?.getTime() || 0) - (parseDateValue(a.uploadedAt || a.updatedAt)?.getTime() || 0));
+  const html = isAppDataLoading ? renderSkeletonCards(5) : apps.length ? apps.map(app => renderAppListItem(app)).join('') :
     emptyState('clock','No releases yet','Check back after developers upload apps.');
 
   return `<div class="max-w-2xl mx-auto p-4 space-y-6">
     <div><h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Releases</h1></div>
+    ${renderOfflineNotice()}
     <div class="grid grid-cols-1 gap-4">${html}</div>
   </div>`;
 }
@@ -1172,6 +1517,25 @@ function renderSearchHTML() {
           placeholder="Search for apps, games, tools..."
           class="w-full bg-slate-100 dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm rounded-full pl-9 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"/>
       </div>
+      <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+        <button onclick="updateSearchFilter('category', 'all')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${searchFilterState.category === 'all' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'bg-white dark:bg-[#1E1E1E] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[#252525]'}">All</button>
+        ${CATEGORIES.map(c => `
+          <button onclick="updateSearchFilter('category', '${escapeHtml(c.id)}')" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${searchFilterState.category === c.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'bg-white dark:bg-[#1E1E1E] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[#252525]'}">${escapeHtml(c.id)}</button>
+        `).join('')}
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <select id="search-sort-filter" onchange="updateSearchFilter('sort', this.value)" class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3 py-2.5 outline-none focus:border-blue-500">
+          <option value="newest" ${searchFilterState.sort === 'newest' ? 'selected' : ''}>Newest first</option>
+          <option value="rating" ${searchFilterState.sort === 'rating' ? 'selected' : ''}>Top rating</option>
+          <option value="size" ${searchFilterState.sort === 'size' ? 'selected' : ''}>Smallest size</option>
+          <option value="title" ${searchFilterState.sort === 'title' ? 'selected' : ''}>A to Z</option>
+        </select>
+        <label class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3 py-2.5 flex items-center gap-2 cursor-pointer">
+          <input id="search-verified-filter" type="checkbox" onchange="updateSearchFilter('verifiedOnly', this.checked)" ${searchFilterState.verifiedOnly ? 'checked' : ''} class="accent-blue-600">
+          Verified only
+        </label>
+      </div>
+      ${renderOfflineNotice()}
 
       <!-- Trending Searches -->
       <div id="search-suggestions-container" class="space-y-4">
@@ -1206,12 +1570,22 @@ window.triggerSearchText = function(text) {
   }
 };
 
-window.handleSearchOnPage = function(query) {
-  const suggestions = document.getElementById('search-suggestions-container');
-  const resultsArea = document.getElementById('search-results-area');
-  const q = query.toLowerCase().trim();
+window.updateSearchFilter = function(key, value) {
+  searchFilterState[key] = value;
+  const input = document.getElementById('global-search-input');
+  handleSearchOnPage(input ? input.value : '');
+};
 
-  if (!q) {
+let searchDebounceTimer;
+window.handleSearchOnPage = function(query) {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    const suggestions = document.getElementById('search-suggestions-container');
+    const resultsArea = document.getElementById('search-results-area');
+    const q = query.toLowerCase().trim();
+    const hasActiveFilters = searchFilterState.category !== 'all' || searchFilterState.verifiedOnly || searchFilterState.sort !== 'newest';
+
+  if (!q && !hasActiveFilters) {
     if (suggestions) suggestions.classList.remove('hidden');
     if (resultsArea) resultsArea.classList.add('hidden');
     return;
@@ -1221,22 +1595,29 @@ window.handleSearchOnPage = function(query) {
   if (resultsArea) {
     resultsArea.classList.remove('hidden');
 
-    const filtered = APPS_DATA.filter(a =>
-      a.title.toLowerCase().includes(q) ||
-      a.description.toLowerCase().includes(q) ||
-      a.category.toLowerCase().includes(q)
-    );
+    let filtered = APPS_DATA.filter(a => {
+      const matchesText = !q ||
+        String(a.title || '').toLowerCase().includes(q) ||
+        String(a.description || '').toLowerCase().includes(q) ||
+        String(a.category || '').toLowerCase().includes(q);
+      const matchesCategory = searchFilterState.category === 'all' || a.category === searchFilterState.category;
+      const matchesVerified = !searchFilterState.verifiedOnly || isAppVerified(a);
+      return matchesText && matchesCategory && matchesVerified;
+    });
+
+    filtered = filtered.sort((a, b) => {
+      if (searchFilterState.sort === 'rating') return getAppRating(b) - getAppRating(a);
+      if (searchFilterState.sort === 'size') {
+        const aSize = Number.parseFloat(a.size);
+        const bSize = Number.parseFloat(b.size);
+        return (Number.isFinite(aSize) ? aSize : Number.MAX_SAFE_INTEGER) - (Number.isFinite(bSize) ? bSize : Number.MAX_SAFE_INTEGER);
+      }
+      if (searchFilterState.sort === 'title') return String(a.title || '').localeCompare(String(b.title || ''));
+      return (parseDateValue(b.uploadedAt || b.updatedAt)?.getTime() || 0) - (parseDateValue(a.uploadedAt || a.updatedAt)?.getTime() || 0);
+    });
 
     if (filtered.length) {
-      resultsArea.innerHTML = filtered.map(app => `
-        <div onclick="openAppModal('${app.id}')" class="bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-3xl p-4 cursor-pointer hover:shadow-md transition-all flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-slate-200 dark:bg-slate-800">${appCardHTML(app, true)}</div>
-          <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-slate-900 dark:text-white text-xs truncate">${escapeHtml(app.title)}</h3>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(app.category)}</p>
-          </div>
-          <button class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-4 py-1.5 rounded-full text-[10px] font-bold">View</button>
-        </div>`).join('');
+      resultsArea.innerHTML = filtered.map(app => renderAppListItem(app)).join('');
     } else {
       resultsArea.innerHTML = `
         <div class="py-16 text-center text-slate-400">
@@ -1245,13 +1626,30 @@ window.handleSearchOnPage = function(query) {
         </div>`;
     }
   }
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#search-results-area .app-card-reveal').forEach((card, index) => {
+      card.style.animationDelay = `${Math.min(index * 45, 300)}ms`;
+      card.classList.add('card-visible');
+    });
+  });
   if (window.lucide) lucide.createIcons();
+  }, 300); // 300ms debounce
 };
 
 // ── DEVELOPER UPLOAD HANDLERS ──
 window.handleIconSelect = function(input) {
   const file = input.files[0];
   if (!file) return;
+  if (!file.type || !file.type.startsWith('image/')) {
+    showToast('Invalid icon', 'Please select a PNG, JPG, or WebP image.', 'danger');
+    input.value = '';
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Icon too large', 'Use an icon image under 2 MB.', 'danger');
+    input.value = '';
+    return;
+  }
   const reader = new FileReader();
   reader.onload = (e) => {
     uploadIconData = e.target.result;
@@ -1268,6 +1666,10 @@ window.handleAppUpload = async function() {
   if (!currentUser) {
     alert('Please sign in before publishing apps.');
     openAuthModal('login');
+    return;
+  }
+  if (!isDeveloperAuthenticated) {
+    showToast('Developer access required', 'This account is not approved to publish apps.', 'danger');
     return;
   }
   if (!db) {
@@ -1287,13 +1689,33 @@ window.handleAppUpload = async function() {
   if (successEl) successEl.classList.add('hidden');
 
   if (!name) { if (errEl) { errEl.textContent = 'Please enter an app name.'; errEl.classList.remove('hidden'); } return; }
+  if (name.length > 80) { if (errEl) { errEl.textContent = 'App name must be 80 characters or less.'; errEl.classList.remove('hidden'); } return; }
   if (!category) { if (errEl) { errEl.textContent = 'Please select a category.'; errEl.classList.remove('hidden'); } return; }
   if (!link) { if (errEl) { errEl.textContent = 'Please enter a download link.'; errEl.classList.remove('hidden'); } return; }
   if (!uploadIconData) { if (errEl) { errEl.textContent = 'Please upload an app icon image.'; errEl.classList.remove('hidden'); } return; }
   if (!desc) { if (errEl) { errEl.textContent = 'Please add a description.'; errEl.classList.remove('hidden'); } return; }
+  if (desc.length > 4000) { if (errEl) { errEl.textContent = 'Description must be 4000 characters or less.'; errEl.classList.remove('hidden'); } return; }
+  const safeLink = safeDownloadUrl(link);
+  if (!safeLink) { if (errEl) { errEl.textContent = 'Please enter a valid http(s) or local download link.'; errEl.classList.remove('hidden'); } return; }
+  const screenshots = screenshotsRaw ? screenshotsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const invalidScreenshot = screenshots.find(s => !safeImageUrl(s));
+  if (invalidScreenshot) {
+    if (errEl) {
+      errEl.textContent = 'Screenshot URLs must be http(s), local image paths, or downloads paths.';
+      errEl.classList.remove('hidden');
+    }
+    return;
+  }
+  const submitBtn = document.getElementById('upload-submit-btn');
+  const originalSubmitLabel = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...';
+    if (window.lucide) lucide.createIcons();
+  }
 
   if (successEl) {
-    successEl.innerHTML = '⏳ Saving your app to Firebase...';
+    successEl.innerHTML = 'Saving your app to Firebase...';
     successEl.classList.remove('hidden');
   }
 
@@ -1305,16 +1727,24 @@ window.handleAppUpload = async function() {
       appInfo: info,
       size: size || 'Unknown',
       iconDataUrl: uploadIconData,
-      downloadLink: link,
-      screenshots: screenshotsRaw ? screenshotsRaw.split(',').map(s=>s.trim()).filter(s=>s) : [],
+      downloadLink: safeLink,
+      screenshots,
       authorUid: currentUser ? currentUser.uid : 'anonymous',
       authorName: currentUser ? currentUser.name : 'Unknown Developer',
       uploadedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isVerified: true,
+      isSafeDownload: true,
+      version: '1.0.0',
+      changelog: [{ version: '1.0.0', date: new Date().toISOString().slice(0, 10), notes: 'Initial public release.' }],
+      downloadCount: 0,
+      rating: 0,
+      reviewCount: 0
     });
 
     uploadIconData = null;
 
-    if (successEl) successEl.innerHTML = `✔ <strong>"${escapeHtml(name)}"</strong> has been published to the cloud!`;
+    if (successEl) successEl.innerHTML = `<strong>"${escapeHtml(name)}"</strong> has been published to the cloud.`;
     
     ['upload-name','upload-desc','upload-info','upload-size','upload-link','upload-screenshots'].forEach(id => {
       const el = document.getElementById(id);
@@ -1332,6 +1762,12 @@ window.handleAppUpload = async function() {
       errEl.classList.remove('hidden');
     }
     if (successEl) successEl.classList.add('hidden');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalSubmitLabel || '<i data-lucide="upload" class="w-4 h-4"></i> Publish Application';
+      if (window.lucide) lucide.createIcons();
+    }
   }
 };
 
@@ -1363,11 +1799,50 @@ window.openAppModal = async function(appId) {
   const app = APPS_DATA.find(a => a.id === appId);
   if (!app) return;
   selectedApp = app;
+  clearTimeout(installButtonResetTimer);
+  clearTimeout(installButtonRestoreTimer);
+  installButtonBusy = false;
+  pendingTrustedDownload = null;
 
   document.getElementById('modal-app-title').textContent = app.title;
   document.getElementById('modal-app-meta').textContent = app.authorName || 'HankStudio Developer';
   document.getElementById('modal-app-desc').textContent = app.description;
   document.getElementById('modal-stat-size').textContent = app.size || '8.8 MB';
+  updateModalFavoriteButton(app.id);
+
+  const trustScreen = document.getElementById('download-trust-screen');
+  if (trustScreen) {
+    trustScreen.classList.add('hidden');
+    trustScreen.innerHTML = '';
+  }
+
+  const verificationBadges = document.getElementById('modal-verification-badges');
+  if (verificationBadges) verificationBadges.innerHTML = renderVerificationBadges(app);
+
+  const changelogSection = document.getElementById('modal-changelog-section');
+  const changelog = Array.isArray(app.changelog) ? app.changelog : [];
+  if (changelogSection) {
+    if (changelog.length) {
+      changelogSection.classList.remove('hidden');
+      changelogSection.innerHTML = `
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs sm:text-sm font-bold text-slate-950 dark:text-white uppercase tracking-wider">Version history</h4>
+          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">v${escapeHtml(app.version || changelog[0].version || '1.0.0')}</span>
+        </div>
+        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-900/30 space-y-2">
+          ${changelog.slice(0, 3).map(item => `
+            <div>
+              <p class="text-xs font-bold text-slate-800 dark:text-white">Version ${escapeHtml(item.version || app.version || '1.0.0')}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(item.date || formatDate(app.updatedAt || app.uploadedAt))}</p>
+              <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mt-1">${escapeHtml(item.notes || 'Maintenance and polish update.')}</p>
+            </div>
+          `).join('')}
+        </div>`;
+    } else {
+      changelogSection.classList.add('hidden');
+      changelogSection.innerHTML = '';
+    }
+  }
   
   const categoryChip = document.getElementById('modal-category-chip');
   if (categoryChip) {
@@ -1380,13 +1855,14 @@ window.openAppModal = async function(appId) {
 
   const dlBtn = document.getElementById('modal-download-btn');
   if (dlBtn) {
-    if (app.downloadLink) {
+    const safeLink = safeDownloadUrl(app.downloadLink);
+    if (safeLink) {
       dlBtn.onclick = () => { downloadSelectedApp(); };
-      dlBtn.textContent = `Install`;
+      dlBtn.innerHTML = '<i data-lucide="download-cloud" class="w-5 h-5 text-emerald-50"></i><span>Install Now</span>';
       dlBtn.disabled = false;
       dlBtn.style.opacity = '1';
     } else {
-      dlBtn.textContent = 'Install Unavailable';
+      dlBtn.innerHTML = '<span>Install Unavailable</span>';
       dlBtn.disabled = true;
       dlBtn.style.opacity = '0.5';
     }
@@ -1418,28 +1894,140 @@ window.openAppModal = async function(appId) {
   // Reset modal scroll position
   const scrollContainer = document.getElementById('modal-content-scroll');
   if (scrollContainer) scrollContainer.scrollTop = 0;
+  if (window.lucide) lucide.createIcons();
 };
 
 window.downloadSelectedApp = function() {
-  if (!selectedApp || !selectedApp.downloadLink) return;
-  const url = selectedApp.downloadLink.trim();
+  if (!selectedApp || !selectedApp.downloadLink || installButtonBusy) return;
+  const url = safeDownloadUrl(selectedApp.downloadLink);
+  if (!url) {
+    showToast('Install blocked', 'That download link is not allowed.', 'danger');
+    return;
+  }
+  const btn = document.getElementById('modal-download-btn');
+  const trustScreen = document.getElementById('download-trust-screen');
+  if (btn) {
+    installButtonBusy = true;
+    btn.disabled = true;
+    btn.classList.add('install-preparing');
+    btn.innerHTML = '<span class="inline-flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>Preparing...</span>';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  clearTimeout(installButtonResetTimer);
+  installButtonResetTimer = setTimeout(() => {
+    pendingTrustedDownload = { url, appId: selectedApp.id };
+    if (trustScreen) {
+      trustScreen.className = 'download-trust-card';
+      trustScreen.innerHTML = `
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/35 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-extrabold text-slate-900 dark:text-white">Download trust check</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Verified by HankStudio before opening the source.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+              <div class="trust-meta"><span>File</span><strong>${escapeHtml(getFileNameFromUrl(url))}</strong></div>
+              <div class="trust-meta"><span>Size</span><strong>${escapeHtml(selectedApp.size || 'Unknown')}</strong></div>
+              <div class="trust-meta"><span>Source</span><strong>${escapeHtml(getSourceDomain(url))}</strong></div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button onclick="confirmTrustedDownload()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2 text-xs font-bold transition-all">Continue Download</button>
+              <button onclick="cancelTrustedDownload()" class="px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl py-2 text-xs font-bold transition-all">Cancel</button>
+            </div>
+          </div>
+        </div>`;
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('install-preparing');
+      btn.innerHTML = '<i data-lucide="shield-check" class="w-5 h-5"></i><span>Trust Check Ready</span>';
+    }
+    installButtonBusy = false;
+    if (window.lucide) lucide.createIcons();
+  }, 450);
+};
+
+window.cancelTrustedDownload = function() {
+  pendingTrustedDownload = null;
+  installButtonBusy = false;
+  const trustScreen = document.getElementById('download-trust-screen');
+  const btn = document.getElementById('modal-download-btn');
+  if (trustScreen) {
+    trustScreen.classList.add('hidden');
+    trustScreen.innerHTML = '';
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.classList.remove('install-preparing', 'install-downloading', 'install-complete');
+    btn.innerHTML = '<i data-lucide="download-cloud" class="w-5 h-5 text-emerald-50"></i><span>Install Now</span>';
+  }
+  if (window.lucide) lucide.createIcons();
+};
+
+window.confirmTrustedDownload = function() {
+  if (!pendingTrustedDownload || !selectedApp) return;
+  const { url, appId } = pendingTrustedDownload;
+  const btn = document.getElementById('modal-download-btn');
+  const trustScreen = document.getElementById('download-trust-screen');
   const isLocalAsset = /^(\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(url);
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';
   if (isLocalAsset || url.startsWith('blob:') || url.startsWith('data:')) {
-    link.download = url.split('/').pop() || `${selectedApp.title || 'download'}`;
+    link.download = getFileNameFromUrl(url);
   } else {
     link.target = '_blank';
   }
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+
+  installButtonBusy = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('install-downloading');
+    btn.innerHTML = '<span class="inline-flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>Downloading...</span>';
+  }
+  if (trustScreen) trustScreen.classList.add('hidden');
+  if (window.lucide) lucide.createIcons();
+
+  clearTimeout(installButtonResetTimer);
+  installButtonResetTimer = setTimeout(() => {
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    trackDownload(appId);
+    showToast('Download started', selectedApp.title ? `${selectedApp.title} is downloading.` : 'Your download has started.', 'success');
+    if (btn) {
+      btn.classList.remove('install-downloading');
+      btn.classList.add('install-complete');
+      btn.innerHTML = '<span class="inline-flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i>Download Started</span>';
+    }
+    pendingTrustedDownload = null;
+    clearTimeout(installButtonRestoreTimer);
+    installButtonRestoreTimer = setTimeout(() => {
+      installButtonBusy = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('install-complete');
+        btn.innerHTML = '<i data-lucide="download-cloud" class="w-5 h-5 text-emerald-50"></i><span>Install Now</span>';
+        if (window.lucide) lucide.createIcons();
+      }
+    }, 900);
+  }, 650);
 };
 
 window.closeAppModal = function() {
   const appModal = document.getElementById('app-detail-modal');
   if (appModal) appModal.classList.add('hidden');
+  clearTimeout(installButtonResetTimer);
+  clearTimeout(installButtonRestoreTimer);
+  installButtonBusy = false;
+  pendingTrustedDownload = null;
+  const trustScreen = document.getElementById('download-trust-screen');
+  if (trustScreen) {
+    trustScreen.classList.add('hidden');
+    trustScreen.innerHTML = '';
+  }
   const viewport = document.getElementById('main-content-viewport');
   if (viewport) viewport.style.overflowY = 'auto';
   document.body.style.overflow = '';
@@ -1466,62 +2054,75 @@ window.setReviewRating = function(rating) {
 // ── LOCAL REVIEWS STORAGE FALLBACKS ──
 let GUEST_REVIEWS_CACHE = {};
 
-function getLocalDefaultReviews(appId) {
-  if (appId !== 'attendease-app') return [];
+function getReviewKey(review) {
   return [
-    {
-      userName: "Mr Asad Pathan",
-      rating: 1,
-      comment: "very bad This is the worst app in the world. This app never works. We have never seen a worse app than this.",
-      timestamp: "2025-08-22T19:23:00.000Z",
-      helpfulCount: 2
-    },
-    {
-      userName: "Arun Kumar",
-      rating: 5,
-      comment: "Excellent app! Face attendance works fast and accurate. Very helpful for payroll management.",
-      timestamp: "2025-08-15T09:30:00.000Z",
-      helpfulCount: 15
-    },
-    {
-      userName: "Sneha Patil",
-      rating: 5,
-      comment: "Highly recommended for site management. Easy tracking and great interface.",
-      timestamp: "2025-08-10T14:20:00.000Z",
-      helpfulCount: 8
-    },
-    {
-      userName: "Rahul Sharma",
-      rating: 5,
-      comment: "Best HR payroll suite I have used. Clean design and dynamic dashboard.",
-      timestamp: "2025-08-05T11:15:00.000Z",
-      helpfulCount: 12
-    },
-    {
-      userName: "John Doe",
-      rating: 5,
-      comment: "Works perfectly on my device. Seamless check-in and checkout system.",
-      timestamp: "2025-07-28T08:45:00.000Z",
-      helpfulCount: 4
-    },
-    {
-      userName: "Meera Nair",
-      rating: 4,
-      comment: "Very useful suite, payroll is dynamic and easy to configure. A few minor lags but overall awesome.",
-      timestamp: "2025-07-20T10:00:00.000Z",
-      helpfulCount: 7
-    },
-    {
-      userName: "Vijay Prasad",
-      rating: 1,
-      comment: "App crashes on launch. Very disappointed, needs immediate fixing.",
-      timestamp: "2025-07-15T15:30:00.000Z",
-      helpfulCount: 9
-    }
-  ];
+    review.userId || '',
+    review.userName || '',
+    review.timestamp || '',
+    review.comment || ''
+  ].join('|');
 }
 
-window.fetchReviews = async function(appId) {
+function getHelpfulVoteState(appId, reviewKey) {
+  const appVotes = REVIEW_FEEDBACK_CACHE[appId] || {};
+  return appVotes[reviewKey] || { helpful: 0, notHelpful: 0, voted: false };
+}
+
+function persistHelpfulVoteState() {
+  saveJsonStorage('hankstudio_review_feedback', REVIEW_FEEDBACK_CACHE);
+}
+
+window.toggleDataSafetyDetails = function() {
+  const details = document.getElementById('data-safety-details');
+  if (!details) return;
+  details.classList.toggle('hidden');
+};
+
+window.handleReviewHelpful = function(appId, reviewKey, type) {
+  try {
+    reviewKey = decodeURIComponent(reviewKey);
+  } catch (e) {}
+  if (!REVIEW_FEEDBACK_CACHE[appId]) REVIEW_FEEDBACK_CACHE[appId] = {};
+  const existing = REVIEW_FEEDBACK_CACHE[appId][reviewKey] || { helpful: 0, notHelpful: 0, voted: false };
+  if (existing.voted) {
+    showToast('Feedback saved', 'You already voted on this review.', 'info');
+    return;
+  }
+  if (type === 'helpful') {
+    existing.helpful += 1;
+    showToast('Thanks', 'Marked as helpful.', 'success');
+  } else {
+    existing.notHelpful += 1;
+    showToast('Thanks', 'Marked as not helpful.', 'info');
+  }
+  existing.voted = true;
+  REVIEW_FEEDBACK_CACHE[appId][reviewKey] = existing;
+  persistHelpfulVoteState();
+  if (selectedApp && selectedApp.id === appId) fetchReviews(appId, activeReviewsRequestId);
+};
+
+window.reportReview = function(appId, reviewKeyToken) {
+  let reviewKey = reviewKeyToken;
+  try {
+    reviewKey = decodeURIComponent(reviewKeyToken);
+  } catch (e) {}
+  if (!REVIEW_REPORT_CACHE[appId]) REVIEW_REPORT_CACHE[appId] = {};
+  REVIEW_REPORT_CACHE[appId][reviewKey] = {
+    reportedAt: new Date().toISOString(),
+    reporterUid: currentUser ? currentUser.uid : 'guest'
+  };
+  saveJsonStorage('hankstudio_review_reports', REVIEW_REPORT_CACHE);
+  showToast('Review reported', 'Thanks. This review is queued for moderation.', 'success');
+  if (selectedApp && selectedApp.id === appId) fetchReviews(appId, activeReviewsRequestId);
+};
+
+function getLocalDefaultReviews(appId) {
+  return [];
+}
+
+window.fetchReviews = async function(appId, requestId = null) {
+  const effectiveRequestId = requestId ?? ++activeReviewsRequestId;
+  activeReviewsRequestId = effectiveRequestId;
   const listEl = document.getElementById('modal-reviews-list');
   if (!listEl) return;
   listEl.innerHTML = '<p class="text-xs text-slate-500">Loading reviews...</p>';
@@ -1535,11 +2136,11 @@ window.fetchReviews = async function(appId) {
     usernameInput.disabled = !!currentUser;
   }
   if (reviewText) {
-    reviewText.disabled = false;
+    reviewText.disabled = !currentUser;
     reviewText.value = '';
   }
   if (authMsg) {
-    authMsg.classList.add('hidden');
+    authMsg.classList.toggle('hidden', !!currentUser);
   }
   setReviewRating(0);
 
@@ -1573,11 +2174,8 @@ window.fetchReviews = async function(appId) {
     // Sort by date desc
     merged.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    // Ensure Mr Asad Pathan is ALWAYS first
-    const asadIndex = merged.findIndex(r => r.userName === 'Mr Asad Pathan');
-    if (asadIndex > -1) {
-      const asadReview = merged.splice(asadIndex, 1)[0];
-      merged.unshift(asadReview);
+    if (effectiveRequestId !== activeReviewsRequestId || !selectedApp || selectedApp.id !== appId) {
+      return;
     }
 
     const reviews = merged;
@@ -1595,7 +2193,12 @@ window.fetchReviews = async function(appId) {
 
       const initial = r.userName ? r.userName.charAt(0).toUpperCase() : 'U';
       const formattedDate = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-GB') : '08/04/23';
-      const helpful = r.helpfulCount || Math.floor(Math.random() * 5) + 1;
+      const reviewKey = getReviewKey(r);
+      const reviewKeyToken = encodeURIComponent(reviewKey);
+      const helpfulState = getHelpfulVoteState(appId, reviewKey);
+      const isReported = !!(REVIEW_REPORT_CACHE[appId] && REVIEW_REPORT_CACHE[appId][reviewKey]);
+      const helpful = (r.helpfulCount || Math.floor(Math.random() * 5) + 1) + (helpfulState.helpful || 0);
+      const helpfulDisabled = helpfulState.voted ? 'opacity-60 pointer-events-none' : '';
       
       let replyHTML = '';
       if (r.reply) {
@@ -1620,8 +2223,8 @@ window.fetchReviews = async function(appId) {
               </div>
               <span class="text-xs font-semibold text-slate-900 dark:text-white">${escapeHtml(r.userName)}</span>
             </div>
-            <button class="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white active:scale-95 transition-transform">
-              <i data-lucide="more-vertical" class="w-4 h-4"></i>
+            <button type="button" onclick="reportReview('${appId}', '${reviewKeyToken}')" class="p-1 rounded-full ${isReported ? 'text-amber-500' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'} active:scale-95 transition-transform" title="Report review">
+              <i data-lucide="${isReported ? 'flag' : 'flag-triangle-right'}" class="w-4 h-4"></i>
             </button>
           </div>
           <!-- Stars & Date Row -->
@@ -1635,8 +2238,8 @@ window.fetchReviews = async function(appId) {
           <div class="flex items-center justify-between mt-3 text-[10px] text-slate-500 dark:text-slate-400">
             <span>${helpful} ${helpful === 1 ? 'person' : 'people'} found this helpful</span>
             <div class="flex gap-2">
-              <span class="text-[9px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">Yes</span>
-              <span class="text-[9px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none">No</span>
+              <button type="button" onclick="handleReviewHelpful('${appId}', '${reviewKeyToken}', 'helpful')" class="text-[9px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none ${helpfulDisabled}">Yes</button>
+              <button type="button" onclick="handleReviewHelpful('${appId}', '${reviewKeyToken}', 'not-helpful')" class="text-[9px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all select-none ${helpfulDisabled}">No</button>
             </div>
           </div>
           <!-- Developer Reply -->
@@ -1687,14 +2290,22 @@ window.fetchReviews = async function(appId) {
 
 window.submitReview = async function(buttonEl) {
   if (!selectedApp) return;
+  if (!currentUser) {
+    showToast('Sign in required', 'Please log in before leaving a review.', 'danger');
+    openAuthModal('login');
+    return;
+  }
   if (currentReviewRating === 0) return alert('Please select a star rating.');
   const text = document.getElementById('review-text').value.trim();
   if (!text) return alert('Please write a short review.');
+  if (!db) {
+    showToast('Reviews unavailable', 'Cloud reviews are not connected right now.', 'danger');
+    return;
+  }
 
   const usernameInput = document.getElementById('review-username');
-  const guestName = (usernameInput ? usernameInput.value.trim() : '') || 'HankStudio Guest';
-  const userId = currentUser ? currentUser.uid : 'guest_' + Math.random().toString(36).substring(2, 9);
-  const userName = currentUser ? (currentUser.name || 'Anonymous') : guestName;
+  const userId = currentUser.uid;
+  const userName = currentUser.name || 'Anonymous';
 
   const newReview = {
     userId: userId,
@@ -1705,32 +2316,40 @@ window.submitReview = async function(buttonEl) {
     helpfulCount: 0
   };
 
-  // Add to local cache first so it is guaranteed to show up instantly on screen
-  if (!GUEST_REVIEWS_CACHE[selectedApp.id]) {
-    GUEST_REVIEWS_CACHE[selectedApp.id] = [];
-  }
-  GUEST_REVIEWS_CACHE[selectedApp.id].unshift(newReview);
-
   const btn = buttonEl || document.activeElement;
-  btn.textContent = 'Submitting...';
-  btn.disabled = true;
+  const originalLabel = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '<span class="inline-flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>Submitting...</span>';
+    btn.disabled = true;
+    if (window.lucide) lucide.createIcons();
+  }
 
   try {
     if (db) {
-      await db.collection(`apps/${selectedApp.id}/reviews`).add({
+      const reviewPayload = {
         userId: userId,
         userName: userName,
         rating: currentReviewRating,
         comment: text,
         timestamp: new Date().toISOString()
-      });
+      };
+
+      await db.collection(`apps/${selectedApp.id}/reviews`).add(reviewPayload);
+
+      if (!GUEST_REVIEWS_CACHE[selectedApp.id]) {
+        GUEST_REVIEWS_CACHE[selectedApp.id] = [];
+      }
+      GUEST_REVIEWS_CACHE[selectedApp.id].unshift(reviewPayload);
     }
     fetchReviews(selectedApp.id);
   } catch (err) {
     alert("Error saving review: " + err.message);
   } finally {
-    btn.textContent = 'Submit Review';
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalLabel || 'Submit Review';
+      btn.disabled = false;
+      if (window.lucide) lucide.createIcons();
+    }
   }
 };
 
@@ -1758,4 +2377,13 @@ function safeCssColor(value, fallback = '#05cd74') {
     return trimmed;
   }
   return fallback;
+}
+
+function safeDownloadUrl(url) {
+  if (!url) return '';
+  const value = String(url).trim();
+  if (!value) return '';
+  if (/^(https?:\/\/|\/|\.\/|\.\.\/|[a-zA-Z]:[\\/]|downloads[\\/])/i.test(value)) return value;
+  if (value.startsWith('blob:')) return value;
+  return '';
 }

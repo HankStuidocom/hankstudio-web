@@ -47,7 +47,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="bg-slate-200 dark:bg-black text-slate-800 dark:text-slate-100 antialiased select-none min-h-screen flex flex-col items-center justify-center transition-colors duration-300">
+<body class="bg-slate-200 dark:bg-darkBg text-slate-800 dark:text-slate-100 antialiased select-none min-h-screen flex flex-col items-center justify-center transition-colors duration-300">
 
 <!-- ══════════════════════════════════════
      PAGE LOADING SCREEN
@@ -175,13 +175,13 @@
 <!-- ══════════════════════════════════════
      MAIN APP CONTAINER
 ══════════════════════════════════════ -->
-<div class="flex h-screen overflow-hidden w-full relative bg-slate-200 dark:bg-black">
+<div class="flex h-screen overflow-hidden w-full relative bg-slate-200 dark:bg-darkBg">
 
   <!-- MAIN CONTENT -->
   <div class="flex-1 flex flex-col min-w-0 h-full w-full relative overflow-hidden bg-white dark:bg-[#121212] transition-colors duration-300">
 
     <!-- HEADER (Dark mode button removed from top tray) -->
-    <header class="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-[#121212] transition-colors duration-300 gap-3">
+    <header class="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white/80 dark:bg-[#121212]/80 backdrop-blur-md transition-colors duration-300 gap-3 z-10 sticky top-0">
       <div class="flex items-center gap-3 flex-shrink-0">
         <div class="flex items-center gap-2.5 cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-all duration-200" onclick="setActiveTab('apps')">
           <div id="header-logo-container" class="w-8 h-8 shadow-sm rounded-xl overflow-hidden bg-brand"></div>
@@ -192,16 +192,16 @@
       <!-- Compact top bar elements (points pill, notifications, profile button) -->
       <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
         <!-- Play Points Badge -->
-        <div class="bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full text-xs font-extrabold flex items-center gap-1 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200 cursor-pointer">
+        <button type="button" onclick="showToast('Play Points', 'You have 57 points available.', 'success')" class="bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full text-xs font-extrabold flex items-center gap-1 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200 cursor-pointer">
           <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i>
           <span>57</span>
-        </div>
+        </button>
 
         <!-- Notification Bell -->
-        <div class="relative p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200">
+        <button type="button" onclick="openNotificationCenter()" class="relative p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200">
           <i data-lucide="bell" class="w-4 h-4"></i>
-          <span class="absolute top-1 right-1 w-3 h-3 bg-red-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center border border-white dark:border-[#121212]">3</span>
-        </div>
+          <span id="notification-count-badge" class="absolute top-1 right-1 w-3 h-3 bg-red-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center border border-white dark:border-[#121212]">3</span>
+        </button>
 
         <!-- Profile Avatar / Sign-In Button -->
         <div id="header-auth-area" class="flex items-center gap-1"></div>
@@ -219,16 +219,15 @@
     <div class="bg-white dark:bg-[#121212] w-full max-w-lg h-full sm:h-auto sm:max-h-[92vh] sm:rounded-[2rem] overflow-hidden shadow-2xl border-none sm:border border-slate-200 dark:border-slate-800 flex flex-col relative animate-fade-in-up">
       
       <!-- Top Action Navigation Bar -->
-      <div class="h-14 flex items-center justify-between px-4 shrink-0 bg-white dark:bg-[#121212] z-10 transition-colors">
+      <div class="h-14 flex items-center justify-between px-4 shrink-0 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 transition-colors border-b border-transparent">
         <button onclick="closeAppModal()" class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200">
           <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </button>
         <div class="flex items-center gap-3">
-          <div class="bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-sm hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i>
-            <span>57</span>
-          </div>
-          <button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200">
+          <button type="button" id="modal-favorite-btn" onclick="toggleFavorite(selectedApp ? selectedApp.id : '', event)" class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200" title="Save app">
+            <i data-lucide="heart" class="w-5 h-5"></i>
+          </button>
+          <button type="button" onclick="showToast('More actions', 'Share and copy link are ready for the next build.', 'info')" class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200">
             <i data-lucide="more-vertical" class="w-5 h-5"></i>
           </button>
         </div>
@@ -243,27 +242,31 @@
           <div class="flex-1 min-w-0">
             <h3 id="modal-app-title" class="text-base sm:text-lg font-bold text-slate-950 dark:text-white tracking-tight leading-snug truncate">App Title</h3>
             <p id="modal-app-meta" class="text-xs sm:text-sm font-semibold text-emerald-500 mt-0.5 truncate">Developer Name</p>
+            <div id="modal-verification-badges" class="flex flex-wrap gap-1 mt-2"></div>
             <span class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Contains ads • In-app purchases</span>
           </div>
         </div>
 
-        <!-- Solid Install Action Button -->
-        <div class="w-full">
+        <!-- Solid Install Action Button (Premium Design) -->
+        <div class="w-full relative group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
           <button onclick="downloadSelectedApp()" id="modal-download-btn"
-            class="w-full py-2.5 rounded-full bg-emerald-600 dark:bg-[#B8CCF6] hover:bg-emerald-700 dark:hover:bg-[#a5bceb] text-white dark:text-[#243B63] font-bold text-xs shadow-md transition-all active:scale-[0.98] duration-200">
-            Install
+            class="install-button relative w-full py-3.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-extrabold text-sm shadow-xl transition-all active:scale-[0.97] duration-200 flex items-center justify-center gap-2 overflow-hidden border border-emerald-400/20">
+            <i data-lucide="download-cloud" class="w-5 h-5 text-emerald-50"></i>
+            <span>Install Now</span>
           </button>
         </div>
+        <div id="download-trust-screen" class="hidden"></div>
 
         <!-- Google Play Store Stats Grid Section -->
         <div class="flex justify-around items-center py-2.5 border-y border-slate-100 dark:border-slate-800/60 px-2 text-center">
           <!-- Stat 1: Ratings -->
           <div class="flex-1 flex flex-col items-center border-r border-slate-100 dark:border-slate-800/60">
             <span class="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-0.5">
-              <span id="modal-app-rating">3.7</span> <i data-lucide="star" class="w-3 h-3 fill-slate-900 dark:fill-white text-slate-900 dark:text-white"></i>
+              <span id="modal-app-rating">0.0</span> <i data-lucide="star" class="w-3 h-3 fill-slate-900 dark:fill-white text-slate-900 dark:text-white"></i>
             </span>
             <span class="text-[9px] text-slate-500 dark:text-slate-500 mt-1 flex items-center gap-0.5 justify-center" id="modal-stat-rating-count">
-              7 reviews <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-500"></i>
+              0 reviews <i data-lucide="info" class="w-2.5 h-2.5 text-slate-400 dark:text-slate-500"></i>
             </span>
           </div>
           <!-- Stat 2: Content Rating -->
@@ -301,6 +304,8 @@
           </div>
         </div>
 
+        <div id="modal-changelog-section" class="space-y-2 pt-1 hidden"></div>
+
         <!-- Data Safety Block -->
         <div class="space-y-3 pt-1">
           <div class="flex justify-between items-center cursor-pointer hover:opacity-80 transition-opacity">
@@ -329,7 +334,11 @@
                 <p class="text-xs font-bold text-slate-800 dark:text-white">App doesn't provide a way to request data deletion</p>
               </div>
             </div>
-            <p class="text-[10px] text-blue-600 dark:text-blue-400 font-bold cursor-pointer hover:underline pt-1">See details</p>
+            <button type="button" onclick="toggleDataSafetyDetails()" class="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline pt-1 text-left">See details</button>
+            <div id="data-safety-details" class="hidden pt-1 space-y-2">
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">This is a curated listing used for app discovery. In production, the safety section should be backed by developer-declared privacy fields and review checks.</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">You can expand this with permissions, data collection summaries, and policy links for each app.</p>
+            </div>
           </div>
         </div>
 
@@ -392,24 +401,44 @@
 
           <!-- Reviews List -->
           <div id="modal-reviews-list" class="space-y-4 pr-1"></div>
-          
-          <!-- Leave a Review Form (Google Play Style) -->
-          <div id="review-form-container" class="bg-slate-50 dark:bg-[#1E1E1E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mt-4">
-            <p class="text-xs font-bold text-slate-800 dark:text-white mb-2">Rate this app</p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 -mt-1.5 mb-3">Tell others what you think</p>
-            <div class="flex gap-1.5 mb-4" id="review-star-selector">
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(1)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(2)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(3)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(4)"></i>
-              <i data-lucide="star" class="w-5 h-5 cursor-pointer text-slate-300 dark:text-slate-600 hover:text-blue-500 transition-colors" onclick="setReviewRating(5)"></i>
+
+          <!-- Premium Leave a Review Form -->
+          <div id="review-form-container" class="bg-gradient-to-br from-slate-50 to-white dark:from-[#1A1A1A] dark:to-[#121212] p-6 rounded-[1.5rem] border border-slate-200/60 dark:border-slate-800/60 mt-4 shadow-sm relative overflow-hidden">
+            <!-- Decorative Accent -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+            <h4 class="text-sm font-extrabold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+              <i data-lucide="message-square-plus" class="w-4 h-4 text-blue-500"></i> Write a Review
+            </h4>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-4">Share your experience to help others</p>
+
+            <div class="flex gap-2 mb-5 justify-center bg-white dark:bg-[#1E1E1E] py-3 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-inner" id="review-star-selector">
+              <i data-lucide="star" class="w-7 h-7 cursor-pointer text-slate-200 dark:text-slate-700 hover:text-amber-400 transition-colors transform hover:scale-110 active:scale-90" onclick="setReviewRating(1)"></i>
+              <i data-lucide="star" class="w-7 h-7 cursor-pointer text-slate-200 dark:text-slate-700 hover:text-amber-400 transition-colors transform hover:scale-110 active:scale-90" onclick="setReviewRating(2)"></i>
+              <i data-lucide="star" class="w-7 h-7 cursor-pointer text-slate-200 dark:text-slate-700 hover:text-amber-400 transition-colors transform hover:scale-110 active:scale-90" onclick="setReviewRating(3)"></i>
+              <i data-lucide="star" class="w-7 h-7 cursor-pointer text-slate-200 dark:text-slate-700 hover:text-amber-400 transition-colors transform hover:scale-110 active:scale-90" onclick="setReviewRating(4)"></i>
+              <i data-lucide="star" class="w-7 h-7 cursor-pointer text-slate-200 dark:text-slate-700 hover:text-amber-400 transition-colors transform hover:scale-110 active:scale-90" onclick="setReviewRating(5)"></i>
             </div>
-            <div id="review-name-field" class="mb-2.5">
-              <input id="review-username" type="text" placeholder="Your name (optional for guests)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 shadow-sm"/>
+
+            <div id="review-name-field" class="mb-3 relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-lucide="user" class="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+              </div>
+              <input id="review-username" type="text" placeholder="Your name (optional)..." class="w-full bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all shadow-sm"/>
             </div>
-            <textarea id="review-text" rows="2" placeholder="Describe your experience (optional)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 mb-2.5 resize-none shadow-sm"></textarea>
-            <button onclick="submitReview(this)" class="w-full bg-emerald-600 dark:bg-[#B8CCF6] hover:bg-emerald-700 dark:hover:bg-[#a5bceb] text-white dark:text-[#243B63] font-bold py-2 rounded-xl text-xs transition-all duration-200 active:scale-95 shadow-sm">Submit Review</button>
-            <p id="review-auth-msg" class="text-[10px] text-red-500 mt-2 hidden">Log in to leave a review.</p>
+
+            <div class="relative group mb-4">
+              <div class="absolute top-3 left-3 pointer-events-none">
+                <i data-lucide="pen-tool" class="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+              </div>
+              <textarea id="review-text" rows="3" placeholder="Describe your experience..." class="w-full bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 dark:text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 resize-none transition-all shadow-sm"></textarea>
+            </div>
+
+            <button onclick="submitReview(this)" class="w-full relative overflow-hidden bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white font-extrabold py-3 rounded-xl text-xs transition-all duration-200 active:scale-[0.98] shadow-md flex items-center justify-center gap-2 group">
+              <span class="relative z-10">Post Review</span>
+              <i data-lucide="send" class="w-3.5 h-3.5 relative z-10 group-hover:translate-x-0.5 transition-transform"></i>
+            </button>
+            <p id="review-auth-msg" class="text-[10px] text-red-500 mt-3 hidden text-center font-bold">Log in to leave a review.</p>
           </div>
 
         </div>
