@@ -7,9 +7,24 @@ let screenshotFiles = [];
 let editAppId = null;
 
 // Firebase Init
-const app = firebase.app();
-const auth = firebase.auth();
-const db = firebase.firestore();
+const firebaseConfig = {
+  apiKey: "AIzaSyDN95soIqy3L9dDyp8K82gWIyUnR95VAcQ",
+  authDomain: "hankstudio-web.firebaseapp.com",
+  projectId: "hankstudio-web",
+  storageBucket: "hankstudio-web.firebasestorage.app",
+  messagingSenderId: "45331467819",
+  appId: "1:45331467819:web:7234241582696fa8aaa46e",
+  measurementId: "G-L21CJ76K0V"
+};
+
+let app, auth, db;
+try {
+  app = firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+} catch (e) {
+  console.error("Firebase failed to initialize statically:", e);
+}
 
 // Auth State Listener
 auth.onAuthStateChanged(user => {
