@@ -214,6 +214,24 @@
     <nav id="bottom-nav-bar" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md sm:max-w-xl md:max-w-2xl bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border-t md:border border-slate-200 dark:border-slate-800 md:rounded-t-[1.75rem] flex justify-around items-center h-14 pb-1 z-40 px-4 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.2)] transition-all duration-300"></nav>
   </div>
 
+  <!-- FULLSCREEN IMAGE LIGHTBOX -->
+  <div id="image-lightbox-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md hidden transition-opacity duration-300 opacity-0">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 p-3 rounded-full text-white/70 hover:text-white hover:bg-white/10 active:scale-90 transition-all z-10">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    <button onclick="prevLightboxImage()" class="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full text-white/70 hover:text-white hover:bg-white/10 active:scale-90 transition-all z-10 hidden sm:block">
+      <i data-lucide="chevron-left" class="w-8 h-8"></i>
+    </button>
+    <button onclick="nextLightboxImage()" class="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full text-white/70 hover:text-white hover:bg-white/10 active:scale-90 transition-all z-10 hidden sm:block">
+      <i data-lucide="chevron-right" class="w-8 h-8"></i>
+    </button>
+    
+    <div class="w-full h-full p-4 sm:p-12 flex flex-col items-center justify-center relative" id="lightbox-swipe-container">
+      <img id="lightbox-main-img" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-transform duration-200">
+      <div id="lightbox-counter" class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium bg-black/50 px-3 py-1 rounded-full"></div>
+    </div>
+  </div>
+
   <!-- APP DETAIL MODAL -->
   <div id="app-detail-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-0 sm:p-4 overflow-y-auto hidden">
     <div class="bg-white dark:bg-[#121212] w-full max-w-lg h-full sm:h-auto sm:max-h-[92vh] sm:rounded-[2rem] overflow-hidden shadow-2xl border-none sm:border border-slate-200 dark:border-slate-800 flex flex-col relative animate-fade-in-up">

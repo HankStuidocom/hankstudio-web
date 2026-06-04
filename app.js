@@ -1874,10 +1874,10 @@ window.openAppModal = async function(appId) {
   const ssGallery = document.getElementById('modal-screenshots');
   if (app.screenshots && app.screenshots.length > 0) {
     if (ssContainer) ssContainer.classList.remove('hidden');
-    if (ssGallery) ssGallery.innerHTML = app.screenshots.map(s => {
+    if (ssGallery) ssGallery.innerHTML = app.screenshots.map((s, index) => {
       const shotUrl = safeImageUrl(s, { allowData: true });
       return shotUrl
-        ? `<img src="${escapeHtml(shotUrl)}" class="h-[220px] sm:h-[300px] w-[110px] sm:w-[150px] rounded-[1.25rem] object-cover shadow-md snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800" onerror="this.style.display='none'">`
+        ? `<img src="${escapeHtml(shotUrl)}" onclick="openLightbox(${index})" class="h-[220px] sm:h-[300px] w-[110px] sm:w-[150px] rounded-[1.25rem] object-cover shadow-md snap-center flex-shrink-0 border border-slate-200 dark:border-slate-800 cursor-pointer hover:opacity-80 transition-opacity" onerror="this.style.display='none'">`
         : '';
     }).filter(Boolean).join('');
   } else {
@@ -2415,3 +2415,77 @@ function safeDownloadUrl(url) {
   if (value.startsWith('blob:')) return value;
   return '';
 }
+// ── LIGHTBOX LOGIC ──
+let lightboxImages = [];
+let currentLightboxIndex = 0;
+
+window.openLightbox = function(index) {
+  if (!selectedApp || !selectedApp.screenshots) return;
+  lightboxImages = selectedApp.screenshots.map(s => safeImageUrl(s, { allowData: true })).filter(Boolean);
+  if (lightboxImages.length === 0) return;
+  
+  currentLightboxIndex = index;
+  updateLightboxView();
+  
+  const modal = document.getElementById('image-lightbox-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    // small delay to allow display:block to apply before opacity transition
+    setTimeout(() => {
+      modal.classList.remove('opacity-0');
+    }, 10);
+  }
+};
+
+window.closeLightbox = function() {
+  const modal = document.getElementById('image-lightbox-modal');
+  if (modal) {
+    modal.classList.add('opacity-0');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300); // match duration-300
+  }
+};
+
+window.nextLightboxImage = function() {
+  if (lightboxImages.length === 0) return;
+  currentLightboxIndex = (currentLightboxIndex + 1) % lightboxImages.length;
+  updateLightboxView();
+};
+
+window.prevLightboxImage = function() {
+  if (lightboxImages.length === 0) return;
+  currentLightboxIndex = (currentLightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+  updateLightboxView();
+};
+
+function updateLightboxView() {
+  const img = document.getElementById('lightbox-main-img');
+  const counter = document.getElementById('lightbox-counter');
+  if (img && lightboxImages[currentLightboxIndex]) {
+    img.src = lightboxImages[currentLightboxIndex];
+  }
+  if (counter) {
+    counter.textContent = `${currentLightboxIndex + 1} / ${lightboxImages.length}`;
+  }
+}
+
+// Add swipe support for lightbox on mobile
+let lightboxTouchStartX = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const swipeContainer = document.getElementById('lightbox-swipe-container');
+  if (swipeContainer) {
+    swipeContainer.addEventListener('touchstart', e => {
+      lightboxTouchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    swipeContainer.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].screenX;
+      if (lightboxTouchStartX - touchEndX > 50) {
+        nextLightboxImage(); // Swipe left -> next
+      } else if (touchEndX - lightboxTouchStartX > 50) {
+        prevLightboxImage(); // Swipe right -> prev
+      }
+    }, { passive: true });
+  }
+});
